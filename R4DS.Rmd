@@ -149,3 +149,90 @@ ggplot(data = mpg) +
 ```
 
 
+## 3.6.1 Exercises
+
+What geom would you use to draw a line chart? A boxplot? A histogram? An area chart?
+```{r}
+# Line chart
+mpg %>%
+  group_by(year) %>%
+  summarise(m = mean(cty)) %>%
+  ggplot(aes(year, m)) + 
+  geom_line()
+
+# Boxplot
+ggplot(mpg, aes(class, hwy)) +
+  geom_boxplot()
+
+# Histogram
+ggplot(mpg, aes(displ)) +
+  geom_histogram(bins = 60)
+
+# Area chart
+huron <- data.frame(year = 1875:1972, level = as.vector(LakeHuron))
+ggplot(huron, aes(year, level)) +
+  geom_area()
+
+```
+
+Run this code in your head and predict what the output will look like. Then, run the code in R and check your predictions.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+```
+
+What does show.legend = FALSE do? What happens if you remove it?
+Why do you think I used it earlier in the chapter?
+
+It removes the legend.
+
+What does the se argument to geom_smooth() do?
+It removes the confidence intervals from the smoothed lines
+
+Will these two graphs look different? Why/why not?
+```{r, echo = F}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot() + 
+  geom_point(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = hwy))
+```
+
+They'll be exactly the same.
+
+Recreate the R code necessary to generate the following graphs.
+
+```{r}
+# 1st.
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(se = F)
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(aes(group = drv), se = F)
+
+# 2nd.
+ggplot(mpg, aes(displ, hwy, colour = drv)) +
+  geom_smooth(se = F) +
+  geom_point()
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = drv)) +
+  geom_smooth(se = F)
+
+# 3rd.
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = drv)) +
+  geom_smooth(aes(linetype = drv), se = F)
+
+# You can do this one by choosing a shape which has a border and simply colour
+# the border with `colour` and the insides with `fill` (which is matched to drv).
+# Then make the whole point a bit bigger with size
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(fill = drv), shape = 21, stroke = 2, colour = "white", size = 3)
+```
