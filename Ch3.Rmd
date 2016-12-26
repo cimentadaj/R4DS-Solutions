@@ -298,3 +298,95 @@ ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..count../sum(..count..)))
 
 ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..prop.., group = 1))
 ```
+
+## 3.8.1 Exercises
+
+What is the problem with this plot? How could you improve it?
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point()
+```
+Althought the two variables are continuous, the chance of being in a single point is very discrete and a lot of points overlap. We could fix it by adding jitter.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter()
+```
+
+What parameters to geom_jitter() control the amount of jittering?
+`width` and `height`
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter(width = 5, height = 10)
+```
+
+Compare and contrast geom_jitter() with geom_count().
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter()
+
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_count()
+```
+`geom_count()` is another variant of `geom_point()` and controls the size of each dot based on the frequency of observations in a specifiy coordinate. It can help to contrast with `geom_jitter()` in understanding the data.
+
+What’s the default position adjustment for geom_boxplot()? Create a visualisation of the mpg dataset that demonstrates it.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = displ)) + 
+  geom_boxplot(aes(colour = drv))
+```
+
+## 3.9.1 Exercises
+
+Turn a stacked bar chart into a pie chart using coord_polar().
+
+```{r}
+p <- ggplot(mpg, aes(class, fill = as.factor(cyl))) +
+  geom_bar()
+p
+
+p + coord_polar()
+```
+
+What does labs() do? Read the documentation.
+`labs()` allows you to control all the labels in the plot. For example:
+```{r}
+p + labs(title = "Hey, this is a title",
+         x = "This is the X axis",
+         y = "This is the Y axis",
+         fill = "This is the fill")
+```
+
+What’s the difference between coord_quickmap() and coord_map()?
+```{r}
+nz <- map_data("nz")
+
+nzmap <- ggplot(nz, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+nzmap + coord_map()
+nzmap + coord_quickmap()
+```
+
+`coord_quickmap()` is very similar to `coord_map()` but `coord_quickmap()` preserves straight lines in what should be a spherical plane. So, basically, the earth is shperical and `coord_map()` preserves that without plotting any straight lines. `coord_quickmap()` adds those lines.
+
+What does the plot below tell you about the relationship between city and highway mpg? Why is coord_fixed() important? What does geom_abline() do?
+
+```{r}
+p <- ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point() + 
+  geom_abline()
+p
+p + coord_fixed()
+```
+
+There is a positive correlation between the two. `coord_fixed()` makes sure there is no visual discrepancies and 
+> ensures that the ranges of axes are equal to the specified ratio by adjusting the plot aspect ratio - Documentation of `coord_fixed()`.
+
+Finally, `geom_abline()` plots the estiamted slope between the two variables.
