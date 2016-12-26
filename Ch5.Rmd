@@ -70,3 +70,71 @@ Because NA | TRUE is saying whether one of the two is `TRUE` and the second one 
 Because at least one of the two expressions can be tested: FALSE & NA. In NA & NA neither can be tested and the results is `NA & NA`.
 
 The general rule is that whenever there is a logical expressions, if one can be tested, then the result shouldn't be `NA`. And any operation that the results is determined, regardless of the number, the inputting `NA` does not affect the result.
+
+## 5.3.1 Exercises
+
+How could you use arrange() to sort all missing values to the start? (Hint: use is.na()).
+```{r}
+df <- tibble(x = c(5, 2, NA))
+arrange(df, desc(is.na(x)))
+```
+We're basically saying, those which are `TRUE` to being `NA`, sort them in descending order.
+
+Sort flights to find the most delayed flights. Find the flights that left earliest.
+```{r}
+arrange(flights, dep_delay)
+
+arrange(flights, desc(dep_delay))
+```
+
+Sort flights to find the fastest flights.
+
+```{r}
+arrange(flights, air_time)
+```
+
+Which flights travelled the longest? Which travelled the shortest?
+```{r}
+# Longest
+filter(flights, air_time == max(air_time, na.rm = T))
+
+# Shortest
+filter(flights, air_time == min(air_time, na.rm = T))
+```
+
+## 5.4.1 Exercises
+
+Brainstorm as many ways as possible to select dep_time, dep_delay, arr_time, and arr_delay from flights.
+
+```{r}
+select(flights, dep_time, dep_delay, arr_time, arr_delay)
+select(flights, starts_with("dep"), starts_with("arr"))
+```
+
+What happens if you include the name of a variable multiple times in a select() call?
+
+```{r}
+select(flights, dep_time, dep_time)
+```
+
+What does the one_of() function do? Why might it be helpful in conjunction with this vector?
+```{r}
+vars <- c("year", "month", "day", "dep_delay", "arr_delay")
+select(flights, one_of(vars))
+```
+
+It works because select only accepts variable names without `" "` quotes. By including inside `one_of()` one can use character names.
+
+Does the result of running the following code surprise you? How do the select helpers deal with case by default? How can you change that default?
+
+By default, each select_helper function ignore the cases of the variables.
+
+```{r}
+select(flights, contains("TIME"))
+```
+
+With this command you can treat each name as literal:
+```{r}
+select(flights, contains("TIME", ignore.case = F))
+```
+
