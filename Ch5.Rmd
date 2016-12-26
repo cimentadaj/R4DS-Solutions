@@ -1,0 +1,72 @@
+---
+title: "Ch5"
+output: html_document
+---
+
+## 5.2.4 Exercises
+
+Find all flights that:
+
+Had an arrival delay of two or more hours
+
+```{r}
+library(nycflights13)
+library(tidyverse)
+
+filter(flights, arr_delay >= 120)
+```
+
+Flew to Houston (IAH or HOU)
+
+```{r}
+filter(flights, dest %in% c("IAH", "HOU"))
+```
+
+Were operated by United, American, or Delta
+
+```{r}
+filter(flights, carrier %in% c("AA", "DL", "UA"))
+```
+
+Departed in summer (July, August, and September)
+```{r}
+filter(flights, month %in% 7:9)
+```
+
+Arrived more than two hours late, but didn’t leave late
+
+```{r}
+filter(flights, arr_delay > 120 & dep_delay == 0)
+```
+
+Were delayed by at least an hour, but made up over 30 minutes in flight
+
+```{r}
+filter(flights, dep_delay >= 60 & (dep_delay - arr_delay >= 30) )
+```
+
+Departed between midnight and 6am (inclusive)
+```{r}
+filter(flights, dep_time >= 2359 & dep_time <= 600)
+```
+
+Another useful dplyr filtering helper is between(). What does it do? Can you use it to simplify the code needed to answer the previous challenges?
+
+```{r}
+filter(flights, between(dep_time, 2359, 600))
+```
+
+How many flights have a missing dep_time? What other variables are missing? What might these rows represent?
+```{r}
+sum(is.na(flights$dep_time))
+
+map_dbl(flights, ~ sum(is.na(.x)))
+```
+
+Why is NA ^ 0 not missing? Why is NA | TRUE not missing? Why is FALSE & NA not missing? Can you figure out the general rule? (NA * 0 is a tricky counterexample!)
+
+Because anything that is `^ 0` equals `1`.
+Because NA | TRUE is saying whether one of the two is `TRUE` and the second one is.
+Because at least one of the two expressions can be tested: FALSE & NA. In NA & NA neither can be tested and the results is `NA & NA`.
+
+The general rule is that whenever there is a logical expressions, if one can be tested, then the result shouldn't be `NA`. And any operation that the results is determined, regardless of the number, the inputting `NA` does not affect the result.

@@ -172,9 +172,52 @@ $(document).ready(function () {
 
 
 <!-- rnb-text-begin -->
+<div id="practice" class="section level2">
+<h2>4.4 Practice</h2>
+<p>Why does this code not work?</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubXlfdmFyxLFhYmxlXG5cbmBgYCJ9 -->
+<pre class="r"><code>my_varıable
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3I6IG9iamVjdCAnbXlfdmFyxLFhYmxlJyBub3QgZm91bmRcbiJ9 -->
+<pre><code>Error: object 'my_varıable' not found</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Look carefully! (This may seem like an exercise in pointlessness, but training your brain to notice even the tiniest difference will pay off when programming.)</p>
+<p>Because there’s the i in the second variable is not an i.</p>
+<p>Tweak each of the following R commands so that they run correctly:</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5cbiMgZ2dwbG90KGRvdGEgPSBtcGcpICsgXG4jICAgZ2VvbV9wb2ludChtYXBwaW5nID0gYWVzKHggPSBkaXNwbCwgeSA9IGh3eSkpXG4jIFxuIyBmbGl0ZXIobXBnLCBjeWwgPSA4KVxuIyBmaWx0ZXIoZGlhbW9uZCwgY2FyYXQgPiAzKVxuXG4jIyMjIyNcblxuZ2dwbG90KGRhdGEgPSBtcGcpICsgXG4gIGdlb21fcG9pbnQobWFwcGluZyA9IGFlcyh4ID0gZGlzcGwsIHkgPSBod3kpKVxuXG5maWx0ZXIobXBnLCBjeWwgPT0gOClcbmZpbHRlcihkaWFtb25kcywgY2FyYXQgPiAzKVxuYGBgIn0= -->
+<pre class="r"><code>library(tidyverse)
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiQ2g0IgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCgo=</div>
+# ggplot(dota = mpg) + 
+#   geom_point(mapping = aes(x = displ, y = hwy))
+# 
+# fliter(mpg, cyl = 8)
+# filter(diamond, carat &gt; 3)
+
+######
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy))
+
+filter(mpg, cyl == 8)
+filter(diamonds, carat &gt; 3)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Press Alt + Shift + K. What happens? How can you get to the same place using the menus?</p>
+<ul>
+<li>Go to tools -&gt; Keyboard shortcups help</li>
+</ul>
+<!-- rnb-text-end -->
+</div>
+
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiQ2g0IgpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sKLS0tCiMjIDQuNCBQcmFjdGljZQoKV2h5IGRvZXMgdGhpcyBjb2RlIG5vdCB3b3JrPwpgYGB7cn0KbXlfdmFyaWFibGUgPC0gMTAKbXlfdmFyxLFhYmxlCiM+IEVycm9yIGluIGV2YWwoZXhwciwgZW52aXIsIGVuY2xvcyk6IG9iamVjdCAnbXlfdmFyxLFhYmxlJyBub3QgZm91bmQKYGBgCkxvb2sgY2FyZWZ1bGx5ISAoVGhpcyBtYXkgc2VlbSBsaWtlIGFuIGV4ZXJjaXNlIGluIHBvaW50bGVzc25lc3MsIGJ1dCB0cmFpbmluZyB5b3VyIGJyYWluIHRvIG5vdGljZSBldmVuIHRoZSB0aW5pZXN0IGRpZmZlcmVuY2Ugd2lsbCBwYXkgb2ZmIHdoZW4gcHJvZ3JhbW1pbmcuKQoKQmVjYXVzZSB0aGVyZSdzIHRoZSBpIGluIHRoZSBzZWNvbmQgdmFyaWFibGUgaXMgbm90IGFuIGkuCgpUd2VhayBlYWNoIG9mIHRoZSBmb2xsb3dpbmcgUiBjb21tYW5kcyBzbyB0aGF0IHRoZXkgcnVuIGNvcnJlY3RseToKYGBge3J9CmxpYnJhcnkodGlkeXZlcnNlKQoKIyBnZ3Bsb3QoZG90YSA9IG1wZykgKyAKIyAgIGdlb21fcG9pbnQobWFwcGluZyA9IGFlcyh4ID0gZGlzcGwsIHkgPSBod3kpKQojIAojIGZsaXRlcihtcGcsIGN5bCA9IDgpCiMgZmlsdGVyKGRpYW1vbmQsIGNhcmF0ID4gMykKCiMjIyMjIwoKZ2dwbG90KGRhdGEgPSBtcGcpICsgCiAgZ2VvbV9wb2ludChtYXBwaW5nID0gYWVzKHggPSBkaXNwbCwgeSA9IGh3eSkpCgpmaWx0ZXIobXBnLCBjeWwgPT0gOCkKZmlsdGVyKGRpYW1vbmRzLCBjYXJhdCA+IDMpCmBgYAoKUHJlc3MgQWx0ICsgU2hpZnQgKyBLLiBXaGF0IGhhcHBlbnM/IEhvdyBjYW4geW91IGdldCB0byB0aGUgc2FtZSBwbGFjZSB1c2luZyB0aGUgbWVudXM/CgotIEdvIHRvIHRvb2xzIC0+IEtleWJvYXJkIHNob3J0Y3VwcyBoZWxw</div>
 
 
 
