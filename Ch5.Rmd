@@ -353,14 +353,38 @@ Which carrier has the worst delays?
 ```{r}
 flights %>%
   group_by(carrier) %>%
-  summarise(dep_max = max(dep_delay, na.rm = T), arr_max = max(arr_delay, na.rm = T)) %>%
+  summarise(dep_max = max(dep_delay, na.rm = T),
+            arr_max = max(arr_delay, na.rm = T)) %>%
   arrange(desc(dep_max, arr_max)) %>%
   filter(1:n() == 1)
 ```
 
 Challenge: can you disentangle the effects of bad airports vs. bad carriers? Why/why not? (Hint: think about flights %>% group_by(carrier, dest) %>% summarise(n()))
 
+It might be possible. For example, if we took the average departure delay for each carrier and then computed the deviations over the overall carrier mean from each airport mean, perhaps we can find something out. If the overall mean is, let's say, 25 mins, and then each deviation is ± 1 or 2, then it could be that the airline is bad or that every single bad. I know, it might be more likely that the airline is bad, but we can't be 100% sure. On the other hand, if the overall carrier mean is high and the deviations are all lower except for 1 or 2 airports then the effect is probably the airport effect.
 
+```{r}
+flights %>%
+  group_by(carrier) %>%
+  mutate(avg_carrier = mean(dep_delay, na.rm = T)) %>%
+  group_by(carrier, origin) %>%
+  mutate(origin_mean = mean(dep_delay, na.rm = T),
+         deviations = origin_mean - avg_carrier) %>%
+  summarise(deviations = mean(deviations), mean = mean(avg_carrier)) %>%
+  ggplot(aes(origin, deviations)) + geom_col() + facet_wrap(~ carrier)
+
+```
+
+Tearing out the effect is not straight forward but we can make some informed guesses. For example, whenever there are substantial deviations, they seem to be higher in EWR airport rather than in other airports. On the other hand, there are some aielines that look particular bad like 9E and MQ. And the same pattern is not found on the vast majority of other airlines, which would suggest it's an airport issues rather than an airline issue.
+
+
+```{r}
+flights %>%
+  group_by(carrier, dest) %>%
+  summarise(mean_departure = mean(dep_delay, na.rm = T),
+            mean_arrival = mean(arr_delay, na.rm = T)) %>%
+  View(.)
+```
 
 For each plane, count the number of flights before the first delay of greater than 1 hour.
 
