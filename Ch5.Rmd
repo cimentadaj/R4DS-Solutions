@@ -243,9 +243,7 @@ delay_char <-
 
 ```{r}
 delay_char %>%
-  filter(nalways_late == 0.99 & twohours == 0.1)
-
-flight_delay_summary %>% filter(percentage_on_time == 0.99 & percentage_2_hours_late == 0.1)
+  filter(percentage_on_time == 0.99 & twohours == 0.01)
 
 ```
 
@@ -273,8 +271,6 @@ delay_char %>%
 
 delay_char %>%
   filter(percentage_on_time == 0.99 & twohours == 0.1)
-
-flight_delay_summary %>% filter(percentage_on_time == 0.99 & percentage_2_hours_late == 0.1)
 ```
 
 Which is more important: arrival delay or departure delay?
@@ -379,8 +375,8 @@ flights %>%
     mutate(dep_date = time_hour) %>%
     group_by(tailnum) %>%
     arrange(dep_date) %>%
-    mutate(cum = !cumany(arr_delay > 60))
-    filter(!cumany(arr_delay > 60)) %>%
+    mutate(cumulative = !cumany(arr_delay > 60)) %>%
+    filter(cumulative == T) %>%
     tally(sort = TRUE)
   
 ```
@@ -392,3 +388,4 @@ When you want to sort the cases based on the count.
 flights %>%
   count(flight, sort = T)
 ```
+
