@@ -12,6 +12,7 @@ Had an arrival delay of two or more hours
 ```{r}
 library(nycflights13)
 library(tidyverse)
+library(car)
 
 filter(flights, arr_delay >= 120)
 ```
@@ -389,3 +390,68 @@ flights %>%
   count(flight, sort = T)
 ```
 
+## 5.7.1 Exercises
+
+Refer back to the table of useful mutate and filtering functions. Describe how each operation changes when you combine it with grouping.
+
+Which one?
+
+Which plane (tailnum) has the worst on-time record?
+
+```{r}
+
+flights %>%
+  group_by(tailnum) %>%
+  filter(!is.na(arr_delay)) %>%
+  summarise(prop_time = sum(arr_delay <= 30)/n(),
+            mean_arr = mean(arr_delay, na.rm = T),
+            fl = n()) %>%
+  arrange(desc(prop_time))
+
+```
+
+All these flights are always late.
+
+What time of day should you fly if you want to avoid delays as much as possible?
+
+```{r}
+flights %>%
+  group_by(hour) %>%
+  filter(!is.na(dep_delay)) %>%
+  summarise( delay = mean( dep_delay > 0 , na.rm = T)) %>%
+  ggplot(aes(hour, delay, fill = delay)) + geom_col() 
+```
+
+Worst time to flight is in the early evening.
+
+For each destination, compute the total minutes of delay. For each, flight, compute the proportion of the total delay for its destination.
+
+```{r}
+flights %>%
+  group_by(dest) %>%
+  filter(!is.na(dep_delay)) %>%
+  summarise(tot_mins = sum(dep_delay[dep_delay > 0]))
+
+flights %>%
+  filter(!is.na(dep_delay)) %>%
+  group_by(tailnum, dest) %>%
+  summarise(m = mean(dep_delay > 0), n = n()) %>%
+  arrange(desc(m))
+
+```
+
+Delays are typically temporally correlated: even once the problem that caused the initial delay has been resolved, later flights are delayed to allow earlier flights to leave. Using lag() explore how the delay of a flight is related to the delay of the immediately preceding flight.
+
+```{r}
+
+flights %>%
+  mutate(new_sched_dep_time = lubridate::make_datetime(year, month, day, hour, minute)) %>%
+  arrange(new_sched_dep_time) %>%
+  mutate(prev_time = lag(dep_delay)) %>%
+  select(origin, new_sched_dep_time, dep_delay, prev_time) %>%
+  ggplot(aes(dep_delay, prev_time)) + geom_point()
+```
+
+Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
+
+Find all destinations that are flown by at least two carriers. Use that information to rank the carriers.
