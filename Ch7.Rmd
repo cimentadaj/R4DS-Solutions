@@ -34,12 +34,17 @@ Yet the relationship between x and y with z is almost flat, as expected. That is
 Explore the distribution of price. Do you discover anything unusual or surprising? (Hint: Carefully think about the binwidth and make sure you try a wide range of values.)
 
 ```{r}
+## TODO: Fix the Y and X axis to be able to specify the cutting point in the distribution.
 source("http://peterhaschke.com/Code/multiplot.R")
 
 graph <- map(seq(50, 1000, 100),
-             ~ ggplot(diamonds, aes(x = price)) + geom_histogram(bins = .x))
+             ~ ggplot(diamonds, aes(x = price)) +
+               geom_histogram(bins = .x) +
+               labs(x = NULL, y = NULL) +
+               scale_x_continuous(labels = NULL) +
+               scale_y_continuous(labels = NULL))
 
-
+multiplot(plotlist = graph, cols = 1)
 ```
 
 
