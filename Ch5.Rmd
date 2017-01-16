@@ -453,4 +453,34 @@ flights %>%
 
 Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
 
+```{r}
+
+# (1)
+flights %>%
+  group_by(dest) %>%
+  arrange(air_time) %>%
+  slice(1:5) %>%
+  select(tailnum, sched_dep_time, sched_arr_time, air_time) %>%
+  arrange(air_time)
+
+# (2)
+
+flights %>%
+  group_by(dest) %>%
+  mutate(shortest = air_time - min(air_time, na.rm = T)) %>%
+  top_n(1, air_time) %>%
+  arrange(-air_time) %>%
+  select(tailnum, sched_dep_time, sched_arr_time, shortest)
+
+```
+
 Find all destinations that are flown by at least two carriers. Use that information to rank the carriers.
+
+```{r}
+flights %>%
+  group_by(dest) %>%
+  filter(n_distinct(carrier) > 2) %>%
+  group_by(carrier) %>%
+  summarise(n = n_distinct(dest)) %>%
+  arrange(-n)
+```
