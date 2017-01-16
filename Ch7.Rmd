@@ -1,0 +1,49 @@
+---
+title: "Ch7"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+7.3.4 Exercises
+
+Explore the distribution of each of the x, y, and z variables in diamonds. What do you learn? Think about a diamond and how you might decide which dimension is the length, width, and depth.
+
+```{r}
+diamonds %>%
+  gather(key = dist, vals, x, y, z) %>%
+  ggplot(aes(vals, colour = dist)) +
+  geom_freqpoly(bins = 100)
+```
+
+One thing that is pretty obvious but perhaps hard to grasp at first is that the distribution of X and Y are pretty much the same. In fact, the same graph from above with `bins = 30` won't show you the X distribution because it overlaps perfectly. The correlation between the two is `cor(diamonds$x, diamonds$y)`.
+
+If we rounded each mm to the closest number, value-pairing x and y yields `mean(with(diamonds, round(x, 0) == round(y, 0)))` of the values with the same number. So far, the length is directly proportional to the y value.
+
+```{r}
+diamonds %>%
+  filter(y < 30) %>%
+  select(x, y, z) %>%
+  ggpairs()
+```
+
+Yet the relationship between x and y with z is almost flat, as expected. That is, after excluding 2 diamonds which had a unreasonable values.
+
+Explore the distribution of price. Do you discover anything unusual or surprising? (Hint: Carefully think about the binwidth and make sure you try a wide range of values.)
+
+```{r}
+source("http://peterhaschke.com/Code/multiplot.R")
+
+graph <- map(seq(50, 1000, 100),
+             ~ ggplot(diamonds, aes(x = price)) + geom_histogram(bins = .x))
+
+
+```
+
+
+How many diamonds are 0.99 carat? How many are 1 carat? What do you think is the cause of the difference?
+
+Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. What happens if you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
+
