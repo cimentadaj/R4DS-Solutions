@@ -364,8 +364,7 @@ Tearing out the effect is not straight forward but we can make some informed gue
 flights %>%
   group_by(carrier, dest) %>%
   summarise(mean_departure = mean(dep_delay, na.rm = T),
-            mean_arrival = mean(arr_delay, na.rm = T)) %>%
-  View(.)
+            mean_arrival = mean(arr_delay, na.rm = T))
 ```
 
 For each plane, count the number of flights before the first delay of greater than 1 hour.
