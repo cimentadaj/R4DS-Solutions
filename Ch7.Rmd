@@ -46,9 +46,41 @@ graph <- map(seq(50, 1000, 100),
 
 multiplot(plotlist = graph, cols = 1)
 ```
-
+The distribution seems to decrease, as expected, but there's a cut in the distribution showing that most prices are above or below a certain threshold.
 
 How many diamonds are 0.99 carat? How many are 1 carat? What do you think is the cause of the difference?
 
+```{r}
+diamonds %>%
+  filter(carat %in% c(0.99, 1)) %>%
+  count(carat)
+```
+
+I have no idea. It could be that 0.99 is just a typo repeate 23 times.
+
+
 Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. What happens if you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
+
+```{r}
+diamonds %>%
+  ggplot(aes(y)) +
+  geom_histogram() +
+  coord_cartesian(ylim = c(0, 50))
+
+# Note how xlim deleted the observations at 0.
+
+diamonds %>%
+  ggplot(aes(y)) +
+  geom_histogram() +
+  xlim(c(0, 60)) +
+  coord_cartesian(y = c(0, 50))
+
+# Also note how xlim and ylim inside coord_cartesian don't exclude the data
+diamonds %>%
+  ggplot(aes(y)) +
+  geom_histogram(bins = 30) +
+  coord_cartesian(xlim = c(2, 60), ylim = c(0, 50))
+
+```
+
 
