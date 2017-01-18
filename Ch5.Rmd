@@ -454,7 +454,6 @@ flights %>%
 Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
 
 ```{r}
-
 # (1)
 flights %>%
   group_by(dest) %>%
