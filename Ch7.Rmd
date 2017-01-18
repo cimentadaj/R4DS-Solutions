@@ -5,6 +5,9 @@ output: html_notebook
 
 ```{r}
 library(tidyverse)
+library(GGally)
+library(nycflights13)
+library(arm)
 ```
 
 7.3.4 Exercises
@@ -84,3 +87,143 @@ diamonds %>%
 ```
 
 
+7.4.1 Exercises
+
+What happens to missing values in a histogram? What happens to missing values in a bar chart? Why is there a difference?
+
+```{r}
+diamonds %>%
+  ggplot(aes(price)) +
+  geom_histogram(bins = 1000)
+```
+In a histogram, they simply leave a gap in the distribution, as in the gap in the above histogram of price. 
+
+For the barplot, the function removes the `NA` value.
+
+```{r}
+mtcars[1, 2] <- NA
+
+mtcars %>%
+  ggplot(aes(cyl)) +
+  geom_bar()
+```
+
+What does na.rm = TRUE do in mean() and sum()?
+
+It removes the `NA` from the calculations.
+
+7.5.1.1 Exercises
+
+Use what you’ve learned to improve the visualisation of the departure times of cancelled vs. non-cancelled flights.
+
+```{r}
+
+fl <- 
+  flights %>%
+  mutate(
+    cancelled = is.na(dep_time),
+    sched_hour = sched_dep_time %/% 100,
+    sched_min = sched_dep_time %% 100,
+    sched_dep_time = sched_hour + sched_min / 60
+  )
+
+fl %>%
+  ggplot(aes(sched_dep_time, ..density.., colour = cancelled)) +
+  geom_freqpoly(binwidth = 1/2)
+
+fl %>%
+  ggplot(aes(cancelled, sched_dep_time)) +
+  geom_boxplot()
+
+
+```
+
+What variable in the diamonds dataset is most important for predicting the price of a diamond? How is that variable correlated with cut? Why does the combination of those two relationships lead to lower quality diamonds being more expensive?
+
+```{r}
+
+display(lm(price ~ ., diamonds), detail = T)
+# In a dirty way, carat
+
+# Let's confirm the variation in carat for cut.
+
+diamonds %>%
+  ggplot(aes(cut, carat)) +
+  geom_boxplot()
+
+# It looks like it's weakly negatively correlated, so the fair diamonds having the greater carat.
+
+diamonds %>%
+  ggplot(aes(carat, colour = cut)) +
+  geom_density(position = "dodge")
+
+# It does like the Fair diamonds have the highest average carat but only by a little.
+
+diamonds %>%
+  group_by(cut) %>%
+  summarise(cor(carat, price))
+
+```
+
+It does look like the carat and price are highly correlated between, as well as within the quality of the diamond. 
+
+Install the ggstance package, and create a horizontal boxplot. How does this compare to using coord_flip()?
+
+```{r}
+library(ggstance)
+
+diamonds %>%
+  ggplot(aes(cut, carat)) +
+  geom_boxplot() +
+  coord_flip()
+
+diamonds %>%
+  ggplot(aes(carat, cut)) +
+  geom_boxploth()
+
+```
+
+It's exactly the same plot but less verbose with the `geom_boxploth()`. Note that because the `geom_boxploth()` is already flipped, the variable order changes as well. The continuous variable goes in the x axis and the categorical in the y axis.
+
+One problem with boxplots is that they were developed in an era of much smaller datasets and tend to display a prohibitively large number of “outlying values”. One approach to remedy this problem is the letter value plot. Install the lvplot package, and try using geom_lv() to display the distribution of price vs cut. What do you learn? How do you interpret the plots?
+
+```{r}
+library(lvplot)
+
+p <- ggplot(diamonds, aes(cut, price, colour = ..LV..))
+p + geom_lv()
+
+p <- ggplot(diamonds, aes(cut, price, fill = ..LV..))
+p + geom_lv()
+
+
+```
+
+Compare and contrast geom_violin() with a facetted geom_histogram(), or a coloured geom_freqpoly(). What are the pros and cons of each method?
+
+```{r}
+
+diamonds %>%
+  ggplot(aes(cut, price)) +
+  geom_violin()
+
+diamonds %>%
+  ggplot(aes(price)) +
+  geom_histogram() +
+  facet_wrap(~ cut, scale = "free_y")
+
+diamonds %>%
+  ggplot(aes(price)) +
+  geom_freqpoly(aes(colour = cut))
+
+```
+
+The violin plot is extremely useful, at least to me, to compare the distributions. Histograms are trickier to compare, although they might be a bit useful when allowing the y axis to vary across plots. Freqpoly are both misleading because the frequency of each category influences greatly the visual display. In both plots we'd have to adjust for it by freeing th y axis  (histogram) and plotting `..density..` in the y axis (freqpoly). 
+
+If you have a small dataset, it’s sometimes useful to use geom_jitter() to see the relationship between a continuous and categorical variable. The ggbeeswarm package provides a number of methods similar to geom_jitter(). List them and briefly describe what each one does.
+
+```{r}
+
+
+
+```
