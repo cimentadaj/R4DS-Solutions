@@ -221,9 +221,3 @@ diamonds %>%
 The violin plot is extremely useful, at least to me, to compare the distributions. Histograms are trickier to compare, although they might be a bit useful when allowing the y axis to vary across plots. Freqpoly are both misleading because the frequency of each category influences greatly the visual display. In both plots we'd have to adjust for it by freeing th y axis  (histogram) and plotting `..density..` in the y axis (freqpoly). 
 
 If you have a small dataset, it’s sometimes useful to use geom_jitter() to see the relationship between a continuous and categorical variable. The ggbeeswarm package provides a number of methods similar to geom_jitter(). List them and briefly describe what each one does.
-
-```{r}
-
-
-
-```
