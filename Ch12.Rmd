@@ -1,0 +1,71 @@
+---
+title: "Ch12"
+output: html_notebook
+---
+
+12.2.1 Exercises
+
+1. Using prose, describe how the variables and observations are organised in each of the sample tables.
+
+table1:
+This is a tidy data set. Country is a column containing all country names, year contains each year in stacked format and the remaining two variables are independent values of different measures.
+
+table2:
+Exactly as the previous table, but the type and count are actually storing two variables into one. Both variables have a different metric and thus should be different variables.
+
+table3:
+Has some tidy principles but as the previous table, it combines two columns in one in the last column.
+
+table4a and table4b:
+
+Both tables are untidy because the year variable should be stacked.
+
+2. Compute the rate for table2, and table4a + table4b. You will need to perform four operations:
+
+Extract the number of TB cases per country per year.
+
+```{r}
+devtools::install_github("garrettgman/DSR")
+library(DSR)
+
+tidy_tb <-
+  table2 %>%
+  spread(type, count)
+
+cases <-
+  tidy_tb %>%
+  select(-population)
+```
+
+Extract the matching population per country per year.
+
+```{r}
+population <-
+  tidy_tb %>%
+  select(-cases)
+```
+Divide cases by population, and multiply by 10000.
+
+Store back in the appropriate place.
+
+```{r}
+tidy_tb <- 
+  tidy_tb %>%
+  mutate(rate = cases$cases/population$population)
+```
+
+Which representation is easiest to work with? Which is hardest? Why?
+
+The first representation. I could've computed everything in one pipeline simply because the data was stacked rather than wide. Doing column operations is extremely easy in wide format, so `spread` is particularly useful for transformations and then turning back.
+
+3. Recreate the plot showing change in cases over time using table2 instead of table1. What do you need to do first?
+
+```{r}
+table2 %>%
+  spread(type, count) %>%
+  mutate(year = as.numeric(year)) %>%
+  ggplot(aes(year, cases)) +
+  geom_line(aes(group = country), colour = "grey50") +
+  geom_point(aes(colour = country))
+
+```
