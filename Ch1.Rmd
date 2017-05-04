@@ -238,3 +238,171 @@ ggplot(mpg, aes(displ, hwy)) +
   geom_point(aes(fill = drv), shape = 21, stroke = 2, colour = "white", size = 3)
 ```
 
+## 3.7.1 Exercises
+
+What is the default geom associated with stat_summary()? How could you rewrite the previous plot to use that geom function instead of the stat function?
+
+```{r, echo = F}
+# Previous plot
+ggplot(data = diamonds) + 
+  stat_summary(
+    mapping = aes(x = cut, y = depth),
+    fun.ymin = min,
+    fun.ymax = max,
+    fun.y = median
+  )
+```
+
+`stat_summary` is associated with `geom_pointrange`.
+
+```{r}
+ggplot(diamonds) +
+  geom_pointrange(aes(cut, depth, ymin = depth, ymax = depth))
+```
+
+What does geom_col() do? How is it different to geom_bar()?
+
+`geom_col` leaves the data as it is. `geom_bar()` creates two variables (count and prop) and then graphs the count data on the y axis. With `geom_col` you can plot the values of any x variable against any y variable.
+
+```{r}
+# For example, plotting exactly x to y values.
+aggregate.data.frame(diamonds$price, list(diamonds$cut), mean, na.rm = T) %>%
+  print(.) %>%
+  ggplot(aes(Group.1, x)) +
+  geom_col()
+```
+
+Most geoms and stats come in pairs that are almost always used in concert. Read through the documentation and make a list of all the pairs. What do they have in common?
+
+What variables does stat_smooth() compute? What parameters control its behaviour?
+
+`stat_smooth()` computes the y, the predicted value of y for each x value. Also, it computes
+the se of that value predicted, together with the upper and lower bound of that point prediction.
+It can compute different methods such as `lm`, `glm`, `lowess` among others. See method in `?stat_smooth`. The statistic can be controlled with the method argument.
+
+You can see the values by wrapping any plot that has geom_smooth() with ggplot_build().
+
+In our proportion bar chart, we need to set group = 1. Why? In other words what is the problem with these two graphs?
+
+Not sure about this one.
+
+```{r}
+# Each cut is treated as a searapte group that sums to 1.
+ggplot(data = diamonds) +
+  geom_bar(mapping = aes(x = cut, y = ..prop..))
+
+# If you calculate it manually, it doesn't matter
+m <- ggplot(data = diamonds)
+m + geom_bar(aes(cut, ..count../sum(..count..)))
+
+diamonds %>%
+  count(cut) %>%
+  mutate(prop = n/sum(n)) %>%
+  ggplot(aes(cut, prop)) + geom_bar(stat = "identity")
+
+ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..count../sum(..count..)))
+
+# By specifying group = 1, you treat all cut groups as 1 group.
+ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..prop.., group = 1))
+```
+
+## 3.8.1 Exercises
+
+What is the problem with this plot? How could you improve it?
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point()
+```
+Althought the two variables are continuous, the chance of being in a single point is very discrete and a lot of points overlap. We could fix it by adding jitter.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter()
+```
+
+What parameters to geom_jitter() control the amount of jittering?
+`width` and `height`
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter(width = 5, height = 10)
+```
+
+Compare and contrast geom_jitter() with geom_count().
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_jitter()
+
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) + 
+  geom_point() +
+  geom_count()
+```
+`geom_count()` is another variant of `geom_point()` and controls the size of each dot based on the frequency of observations in a specifiy coordinate. It can help to contrast with `geom_jitter()` in understanding the data.
+
+What’s the default position adjustment for geom_boxplot()? Create a visualisation of the mpg dataset that demonstrates it.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = class, y = displ)) + 
+  geom_boxplot(aes(colour = drv))
+```
+
+---
+title: "R-4DS"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## 3.9.1 Exercises
+
+Turn a stacked bar chart into a pie chart using coord_polar().
+
+```{r}
+ggplot(mpg, aes(factor(1), fill = factor(cyl))) +
+  geom_bar(width = 1) +
+  coord_polar(theta = 'y')
+```
+
+What does labs() do? Read the documentation.
+`labs()` allows you to control all the labels in the plot. For example:
+```{r}
+p + labs(title = "Hey, this is a title",
+         x = "This is the X axis",
+         y = "This is the Y axis",
+         fill = "This is the fill")
+```
+
+What’s the difference between coord_quickmap() and coord_map()?
+```{r}
+nz <- map_data("nz")
+
+nzmap <- ggplot(nz, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", colour = "black")
+
+nzmap + coord_map()
+nzmap + coord_quickmap()
+```
+
+`coord_quickmap()` is very similar to `coord_map()` but `coord_quickmap()` preserves straight lines in what should be a spherical plane. So, basically, the earth is shperical and `coord_map()` preserves that without plotting any straight lines. `coord_quickmap()` adds those lines adjusting to the spherical surface.
+
+What does the plot below tell you about the relationship between city and highway mpg? Why is coord_fixed() important? What does geom_abline() do?
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = cty, y = hwy)) +
+  geom_point() + 
+  geom_abline() +
+  coord_fixed()
+```
+
+There is a positive correlation between the two. `coord_fixed()` makes sure there is no visual discrepancies and 
+> ensures that the ranges of axes are equal to the specified ratio by adjusting the plot aspect ratio - Documentation of `coord_fixed()`.
+
+Finally, `geom_abline()` plots the estimated slope between the two variables.
