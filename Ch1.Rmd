@@ -34,3 +34,207 @@ ggplot(mpg) + geom_point(aes(class, drv))
 ```
 
 Because both variables are categorical.
+
+## 3.3.1 Exercises
+
+What’s gone wrong with this code? Why are the points not blue?
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, color = "blue"))
+```
+
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy), color = "blue")
+```
+
+Which variables in mpg are categorical? Which variables are continuous? (Hint: type ?mpg to read the documentation for the dataset). How can you see this information when you run mpg?
+
+### Categorical
+- Model
+- cyl
+- Manufacturer
+- trans
+- drv
+- fl
+- class
+
+### Continuous
+- displ
+- year
+- cty
+- hwy
+
+Map a continuous variable to color, size, and shape. How do these aesthetics behave differently for categorical vs. continuous variables?
+
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, colour = cty))
+# ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, shape = cty)) This creates an error
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, size = cty))
+```
+
+What happens if you map the same variable to multiple aesthetics?
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, colour = cty, size = cty))
+```
+
+What does the stroke aesthetic do? What shapes does it work with? (Hint: use ?geom_point)
+
+Stroke controls the width of the border of certain shapes. Those shapes which have borders are the only ones that stroke can alter.
+
+What happens if you map an aesthetic to something other than a variable name, like aes(colour = displ < 5)?
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy, colour = displ < 5))
+```
+
+ggplot turns displ < 5 into a boolean (or dummy) variable on the fly and maps that T or F to the colour argument.
+
+## 3.5.1 Exercises
+
+What happens if you facet on a continuous variable?
+
+```{r}
+ggplot(data = mpg) + geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_wrap(~ cty)
+```
+
+It plots it anyway
+
+What do the empty cells in plot with facet_grid(drv ~ cyl) mean? How do they relate to this plot?
+
+```{r}
+ggplot(data = mpg) +
+  geom_point(mapping = aes(x = displ, y = hwy)) + facet_grid(drv ~ cyl)
+```
+
+It means that there are combinations where there are no data points.
+
+What plots does the following code make? What does . do?
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(drv ~ .)
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(. ~ cyl)
+```
+
+The dot controls whether the facetting will be done row or column wise. For example `facet_grid(drv ~ .)` will use drv as rows while `facet_grid(. ~ drv)` will use it as columns. `facet_grid(~ drv)` will do the same as the column wise facetting but `facet_grid(drv ~)` won't because a formula object needs to have something after the `~`.
+
+Take the first faceted plot in this section:
+
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_wrap(~ class, nrow = 2)
+```
+
+What are the advantages to using faceting instead of the colour aesthetic? What are the disadvantages? How might the balance change if you had a larger dataset?
+
+I think facetting is better when you want to pay particular attention to particular facets alone (naturally) while using the color aesthetic is better to discriminate which points are located where. Colour is better to get a global overview of the relationship while facetting is better for paying attention to within group patterns.
+
+Read ?facet_wrap. What does nrow do? What does ncol do? What other options control the layout of the individual panels? Why doesn’t facet_grid() have nrow and ncol variables?
+
+`nrow` controls the number of rows for the total number of facets whereas `ncol` controls the number of columns. Other options can control interesting parameters. For example, scales can control whether each plot has its own y axis with `scales = "free"`, as in allow the axes to be free. The function also has the labeller option to change the names of each facet and other options like `strip.position` for the position of the facets labels. Read `?facet_wrap` for more options.
+
+`facet_grid` doesn't have the option to specify rows or columns because it calculate automatically the grid. So the multiplication of the number of distinct values in the variables in the formula.
+
+
+When using facet_grid() you should usually put the variable with more unique levels in the columns. Why?
+
+Because otherwise the graph is going to be too long and you won't understand anything. This graph is a good example:
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) + 
+  facet_grid(~ model)
+```
+
+## 3.6.1 Exercises
+
+What geom would you use to draw a line chart? A boxplot? A histogram? An area chart?
+```{r}
+# Line chart
+mpg %>%
+  group_by(year) %>%
+  summarise(m = mean(cty)) %>%
+  ggplot(aes(year, m)) + 
+  geom_line()
+
+# Boxplot
+ggplot(mpg, aes(class, hwy)) +
+  geom_boxplot()
+
+# Histogram
+ggplot(mpg, aes(displ)) +
+  geom_histogram(bins = 60)
+
+# Area chart
+huron <- data.frame(year = 1875:1972, level = as.vector(LakeHuron))
+ggplot(huron, aes(year, level)) +
+  geom_area()
+
+```
+
+Run this code in your head and predict what the output will look like. Then, run the code in R and check your predictions.
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, color = drv)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE)
+```
+
+What does show.legend = FALSE do? What happens if you remove it?
+Why do you think I used it earlier in the chapter?
+
+It removes the legend. It gives a cleaner plot when its clear that the grouping is done on a specific variable.
+
+What does the se argument to geom_smooth() do?
+
+It removes the confidence intervals from the smoothed lines
+
+Will these two graphs look different? Why/why not?
+```{r, echo = F}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_smooth()
+
+ggplot() + 
+  geom_point(data = mpg, mapping = aes(x = displ, y = hwy)) + 
+  geom_smooth(data = mpg, mapping = aes(x = displ, y = hwy))
+```
+
+They'll be exactly the same.
+
+Recreate the R code necessary to generate the following graphs.
+
+```{r}
+# 1st.
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(se = F)
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_smooth(aes(group = drv), se = F)
+
+# 2nd.
+ggplot(mpg, aes(displ, hwy, colour = drv)) +
+  geom_smooth(se = F) +
+  geom_point()
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = drv)) +
+  geom_smooth(se = F)
+
+# 3rd.
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = drv)) +
+  geom_smooth(aes(linetype = drv), se = F)
+
+# You can do this one by choosing a shape which has a border and simply colour
+# the border with `colour` and the insides with `fill` (which is matched to drv).
+# Then make the whole point a bit bigger with size
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(fill = drv), shape = 21, stroke = 2, colour = "white", size = 3)
+```
+
