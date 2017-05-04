@@ -1,0 +1,36 @@
+---
+title: "R-4DS"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## 3.2.4 Exercises
+
+Run ggplot(data = mpg) what do you see?
+```{r}
+ggplot(data = mpg)
+```
+
+How many rows are in mtcars? How many columns?
+```{r}
+dim(mpg)
+```
+What does the drv variable describe? Read the help for ?mpg to find out.
+
+Whether the car is front wheel drive or not.
+f = front-wheel drive, r = rear wheel drive, 4 = 4wd
+
+Make a scatterplot of hwy vs cyl.
+```{r}
+ggplot(mpg) + geom_point(aes(hwy, cyl))
+```
+What happens if you make a scatterplot of class vs drv. Why is the plot not useful?
+```{r}
+ggplot(mpg) + geom_point(aes(class, drv))
+```
+
+Because both variables are categorical.
