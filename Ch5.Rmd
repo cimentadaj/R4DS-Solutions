@@ -1,16 +1,17 @@
 ---
-title: "Ch7"
+title: "Ch5"
 output: html_notebook
 ---
 
-```{r}
+```{r, include = F}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(GGally)
 library(nycflights13)
 library(arm)
 ```
 
-7.3.4 Exercises
+# 7.3.4 Exercises
 
 Explore the distribution of each of the x, y, and z variables in diamonds. What do you learn? Think about a diamond and how you might decide which dimension is the length, width, and depth.
 
@@ -32,7 +33,7 @@ diamonds %>%
   ggpairs()
 ```
 
-Yet the relationship between x and y with z is almost flat, as expected. That is, after excluding 2 diamonds which had a unreasonable values.
+Yet the relationship between x and y with z is almost flat, as expected. That is, after excluding 2 diamonds which had unreasonable values.
 
 Explore the distribution of price. Do you discover anything unusual or surprising? (Hint: Carefully think about the binwidth and make sure you try a wide range of values.)
 
@@ -47,7 +48,7 @@ graph <- map(seq(50, 1000, 100),
                scale_x_continuous(labels = NULL) +
                scale_y_continuous(labels = NULL))
 
-multiplot(plotlist = graph, cols = 1)
+multiplot(plotlist = graph)
 ```
 The distribution seems to decrease, as expected, but there's a cut in the distribution showing that most prices are above or below a certain threshold.
 
@@ -59,8 +60,7 @@ diamonds %>%
   count(carat)
 ```
 
-I have no idea. It could be that 0.99 is just a typo repeate 23 times.
-
+I have no idea. It could be that 0.99 is just a typo repeated 23 times.
 
 Compare and contrast coord_cartesian() vs xlim() or ylim() when zooming in on a histogram. What happens if you leave binwidth unset? What happens if you try and zoom so only half a bar shows?
 
@@ -69,7 +69,6 @@ diamonds %>%
   ggplot(aes(y)) +
   geom_histogram() +
   coord_cartesian(ylim = c(0, 50))
-
 # Note how xlim deleted the observations at 0.
 
 diamonds %>%
@@ -86,8 +85,7 @@ diamonds %>%
 
 ```
 
-
-7.4.1 Exercises
+# 7.4.1 Exercises
 
 What happens to missing values in a histogram? What happens to missing values in a bar chart? Why is there a difference?
 
@@ -112,6 +110,13 @@ What does na.rm = TRUE do in mean() and sum()?
 
 It removes the `NA` from the calculations.
 
+---
+title: "Ch7"
+output: html_notebook
+---
+
+
+
 7.5.1.1 Exercises
 
 Use what you’ve learned to improve the visualisation of the departure times of cancelled vs. non-cancelled flights.
@@ -134,8 +139,6 @@ fl %>%
 fl %>%
   ggplot(aes(cancelled, sched_dep_time)) +
   geom_boxplot()
-
-
 ```
 
 What variable in the diamonds dataset is most important for predicting the price of a diamond? How is that variable correlated with cut? Why does the combination of those two relationships lead to lower quality diamonds being more expensive?
@@ -165,7 +168,7 @@ diamonds %>%
 
 ```
 
-It does look like the carat and price are highly correlated between, as well as within the quality of the diamond. 
+It does look like the carat and price are highly correlated between, as well as within, the quality of the diamond. 
 
 Install the ggstance package, and create a horizontal boxplot. How does this compare to using coord_flip()?
 
@@ -202,7 +205,6 @@ p + geom_lv()
 Compare and contrast geom_violin() with a facetted geom_histogram(), or a coloured geom_freqpoly(). What are the pros and cons of each method?
 
 ```{r}
-
 diamonds %>%
   ggplot(aes(cut, price)) +
   geom_violin()
@@ -215,9 +217,49 @@ diamonds %>%
 diamonds %>%
   ggplot(aes(price)) +
   geom_freqpoly(aes(colour = cut))
-
 ```
 
 The violin plot is extremely useful, at least to me, to compare the distributions. Histograms are trickier to compare, although they might be a bit useful when allowing the y axis to vary across plots. Freqpoly are both misleading because the frequency of each category influences greatly the visual display. In both plots we'd have to adjust for it by freeing th y axis  (histogram) and plotting `..density..` in the y axis (freqpoly). 
 
 If you have a small dataset, it’s sometimes useful to use geom_jitter() to see the relationship between a continuous and categorical variable. The ggbeeswarm package provides a number of methods similar to geom_jitter(). List them and briefly describe what each one does.
+
+# 7.5.2.1 Exercises
+
+How could you rescale the count dataset above to more clearly show the distribution of cut within colour, or colour within cut?
+
+By calculating percentages and also showing the n.
+
+```{r}
+diamonds %>%
+  count(color, cut) %>%
+  group_by(color) %>%
+  mutate(perc = n / sum(n))
+```
+
+Use geom_tile() together with dplyr to explore how average flight delays vary by destination and month of year. What makes the plot difficult to read? How could you improve it?
+
+One thing that makes it extremely difficult to read is that it is difficult to see differences in dep_delay because the higher values are driving the whole color palette upwards. Also, many dest have missing values on some months. Two solutions could be done: exclude dest with missing vallues for now and summarise, standardize or rescale the dep_delay so that we con spot differences.
+
+```{r}
+flights %>%
+  ggplot(aes(x = month, y = dest, fill = dep_delay)) +
+  geom_tile()
+
+flights %>%
+  group_by(dest, month) %>%
+  filter(!is.na(dep_delay)) %>%
+  mutate(dep_del_dev = median(dep_delay)) %>%
+  ggplot(aes(x = as.factor(month), y = dest, fill = dep_del_dev)) +
+  geom_tile()
+```
+
+Why is it slightly better to use aes(x = color, y = cut) rather than aes(x = cut, y = color) in the example above?
+
+```{r}
+diamonds %>%
+  count(color, cut) %>%
+  ggplot(aes(x = color, y = cut)) +
+  geom_tile(aes(fill = n))
+```
+
+Because the cut is ordered giving the impression of a scatterplot-type of intuition. Also, it's better to have names that we to interpret constantly (and are a bit lengthy) on the y axis.

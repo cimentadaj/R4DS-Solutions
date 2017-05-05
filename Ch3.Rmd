@@ -3,14 +3,15 @@ title: "Ch3"
 output: html_notebook
 ---
 
-## 5.2.4 Exercises
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(nycflights13)
 library(tidyverse)
 library(car)
 ```
+
+
+## 5.2.4 Exercises
 
 Find all flights that:
 
