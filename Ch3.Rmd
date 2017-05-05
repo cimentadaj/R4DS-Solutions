@@ -1,19 +1,22 @@
 ---
-title: "Ch5"
-output: html_document
+title: "Ch3"
+output: html_notebook
 ---
 
 ## 5.2.4 Exercises
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(nycflights13)
+library(tidyverse)
+library(car)
+```
 
 Find all flights that:
 
 Had an arrival delay of two or more hours
 
 ```{r}
-library(nycflights13)
-library(tidyverse)
-library(car)
-
 filter(flights, arr_delay >= 120)
 ```
 
@@ -43,7 +46,14 @@ filter(flights, arr_delay > 120, dep_delay <= 0)
 Were delayed by at least an hour, but made up over 30 minutes in flight
 
 ```{r}
-filter(flights, dep_delay >= 60, (dep_delay - arr_delay > 30) )
+# For example, if dep_delay is 10 minutes late then arr_delay should be
+# 10 mins lates. 10 - 10 = 0, so air time was on time.
+
+# If dep_delay is 10 minutes late but arr_delay  is -20 minutes earlier, then
+# arr_delay SHOULD'VE been 10 but instead is -20 (because of 30 catch up), so
+# 10 - (-20) = 30.
+
+filter(flights, dep_delay >= 60, (dep_delay - arr_delay > 30))
 ```
 
 Departed between midnight and 6am (inclusive)
@@ -91,7 +101,6 @@ arrange(flights, desc(dep_delay))
 ```
 
 Sort flights to find the fastest flights.
-
 ```{r}
 arrange(flights, air_time)
 ```
@@ -224,8 +233,6 @@ What trigonometric functions does R provide?
 
 Brainstorm at least 5 different ways to assess the typical delay characteristics of a group of flights. Consider the following scenarios:
 
-A flight is 15 minutes early 50% of the time, and 15 minutes late 50% of the time.
-
 ```{r}
 delay_char <-
   flights %>%
@@ -237,15 +244,18 @@ delay_char <-
             thirty_early = mean(arr_delay == -30, na.rm = T),
             thirty_late = mean(arr_delay == 30, na.rm = T),
             percentage_on_time = mean(arr_delay == 0, na.rm = T),
-            twohours = mean(arr_delay > 120, na.rm = T))
+            twohours = mean(arr_delay > 120, na.rm = T)) %>%
+  map_if(is_double, round, 2) %>%
+  as_tibble()
 
 
 ```
 
+A flight is 15 minutes early 50% of the time, and 15 minutes late 50% of the time.
+
 ```{r}
 delay_char %>%
-  filter(percentage_on_time == 0.99 & twohours == 0.01)
-
+  filter(fifteen_early == 0.5, fifteen_late == 0.5)
 ```
 
 A flight is always 10 minutes late.
@@ -271,7 +281,8 @@ delay_char %>%
 ```{r}
 
 delay_char %>%
-  filter(percentage_on_time == 0.99 & twohours == 0.1)
+  filter(percentage_on_time == 0.99 & twohours == 0.01)
+
 ```
 
 Which is more important: arrival delay or departure delay?
@@ -280,7 +291,8 @@ It depends
 
 Come up with another approach that will give you the same output as:
 ```{r}
-not_cancelled <- flights %>% 
+not_cancelled <-
+  flights %>% 
   filter(!is.na(dep_delay), !is.na(arr_delay))
 
 not_cancelled %>%
@@ -343,9 +355,9 @@ It might be possible. For example, if we took the average departure delay for ea
 ```{r}
 
 flights %>%
-  summarise(n_car = length(unique(carrier)),
-            n_air = length(unique(dest)),
-            n_or = length(unique(origin)))
+  summarise(n_car = n_distinct(carrier),
+            n_air = n_distinct(dest),
+            n_or = n_distinct(origin))
 
 flights %>%
   group_by(carrier) %>%
@@ -358,7 +370,7 @@ flights %>%
 
 ```
 
-Tearing out the effect is not straight forward but we can make some informed guesses. For example, whenever there are substantial deviations, they seem to be higher in EWR airport rather than in other airports. On the other hand, there are some aielines that look particular bad like 9E and MQ. And the same pattern is not found on the vast majority of other airlines, which would suggest it's an airport issues rather than an airline issue.
+Tearing out the effect is not straight forward but we can make some informed guesses. For example, whenever there are substantial deviations, they seem to be higher in EWR airport rather than in other airports. On the other hand, there are some airlines that look particular bad like 9E and MQ. And the same pattern is not found on the vast majority of other airlines, which would suggest it's an airport issues rather than an airline issue.
 
 ```{r}
 flights %>%
@@ -370,7 +382,6 @@ flights %>%
 For each plane, count the number of flights before the first delay of greater than 1 hour.
 
 ```{r}
-
 flights %>%
     mutate(dep_date = time_hour) %>%
     group_by(tailnum) %>%
@@ -378,7 +389,6 @@ flights %>%
     mutate(cumulative = !cumany(arr_delay > 60)) %>%
     filter(cumulative == T) %>%
     tally(sort = TRUE)
-  
 ```
 
 What does the sort argument to count() do. When might you use it?
@@ -400,13 +410,12 @@ Which plane (tailnum) has the worst on-time record?
 ```{r}
 
 flights %>%
-  group_by(tailnum) %>%
   filter(!is.na(arr_delay)) %>%
+  group_by(tailnum) %>%
   summarise(prop_time = sum(arr_delay <= 30)/n(),
             mean_arr = mean(arr_delay, na.rm = T),
             fl = n()) %>%
   arrange(desc(prop_time))
-
 ```
 
 All these flights are always late.
@@ -447,9 +456,13 @@ flights %>%
   mutate(new_sched_dep_time = lubridate::make_datetime(year, month, day, hour, minute)) %>%
   arrange(new_sched_dep_time) %>%
   mutate(prev_time = lag(dep_delay)) %>%
+  # filter(between(dep_delay, 0, 300), between(prev_time, 0, 300)) %>% # play with this one
   select(origin, new_sched_dep_time, dep_delay, prev_time) %>%
-  ggplot(aes(dep_delay, prev_time)) + geom_point()
+  ggplot(aes(dep_delay, prev_time)) + geom_point(alpha = 1/10) +
+  geom_smooth()
 ```
+
+Although there is a lot of noise, you can see a sort of straight line going on there
 
 Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
 
