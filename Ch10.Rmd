@@ -5,8 +5,7 @@ output: html_notebook
 
 10.5 Exercises
 
-```{r, echo = F}
-suppressWarnings(suppressMessages(library(tidyverse)))
+```{r, echo = F, warnings = F}
 library(tibble)
 ```
 

@@ -233,7 +233,10 @@ By calculating percentages and also showing the n.
 diamonds %>%
   count(color, cut) %>%
   group_by(color) %>%
-  mutate(perc = n / sum(n))
+  mutate(perc = n / sum(n)) %>%
+  ggplot(aes(color, cut, fill = perc)) +
+  geom_tile() +
+  scale_fill_vi
 ```
 
 Use geom_tile() together with dplyr to explore how average flight delays vary by destination and month of year. What makes the plot difficult to read? How could you improve it?
@@ -241,16 +244,21 @@ Use geom_tile() together with dplyr to explore how average flight delays vary by
 One thing that makes it extremely difficult to read is that it is difficult to see differences in dep_delay because the higher values are driving the whole color palette upwards. Also, many dest have missing values on some months. Two solutions could be done: exclude dest with missing vallues for now and summarise, standardize or rescale the dep_delay so that we con spot differences.
 
 ```{r}
+library(viridis)
+library(forcats)
 flights %>%
   ggplot(aes(x = month, y = dest, fill = dep_delay)) +
   geom_tile()
 
 flights %>%
   group_by(dest, month) %>%
-  filter(!is.na(dep_delay)) %>%
-  mutate(dep_del_dev = median(dep_delay)) %>%
-  ggplot(aes(x = as.factor(month), y = dest, fill = dep_del_dev)) +
-  geom_tile()
+  summarize(dep_del_dev = mean(dep_delay, na.rm = T)) %>%
+  group_by(dest) %>%
+  filter(n() == 12) %>%
+  ungroup() %>%
+  ggplot(aes(x = factor(month), y = fct_reorder(dest, dep_del_dev), fill = dep_del_dev)) +
+  geom_tile() +
+  scale_fill_viridis()
 ```
 
 Why is it slightly better to use aes(x = color, y = cut) rather than aes(x = cut, y = color) in the example above?
@@ -263,3 +271,41 @@ diamonds %>%
 ```
 
 Because the cut is ordered giving the impression of a scatterplot-type of intuition. Also, it's better to have names that we to interpret constantly (and are a bit lengthy) on the y axis.
+
+# 5.3.3 Two continuous variables
+
+Instead of summarising the conditional distribution with a boxplot, you could use a frequency polygon. What do you need to consider when using cut_width() vs cut_number()? How does that impact a visualisation of the 2d distribution of carat and price?
+
+```{r}
+ggplot(data = diamonds, 
+       mapping = aes(x = price,
+                     colour = cut_width(carat, 0.3))) +
+  geom_freqpoly()
+```
+
+Exercise 11.3.5
+
+7. Generate the correct format string to parse each of the following dates and times:
+
+```{r}  
+d1 <- "January 1, 2010"
+parse_date(d1, format = "%B %d, %Y")
+
+d2 <- "2015-Mar-07"
+parse_date(d2, format = "%Y-%b-%d")
+
+d3 <- "06-Jun-2017"
+parse_date(d3, format = "%d-%b-%Y")
+
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+parse_date(d4, format("%B %d (%Y)"))
+
+d5 <- "12/30/14" # Dec 30, 2014
+parse_date(d5, format = "%m/%d/%y")
+
+t1 <- "1705"
+parse_time(t1, format = "%H%M")
+
+t2 <- "11:15:10.12 PM"
+parse_time(t2, format = "%H:%M:%S PM")
+```
