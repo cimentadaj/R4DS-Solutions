@@ -312,12 +312,13 @@ m + geom_bar(aes(cut, ..count../sum(..count..)))
 diamonds %>%
   count(cut) %>%
   mutate(prop = n/sum(n)) %>%
-  ggplot(aes(cut, prop)) + geom_bar(stat = "identity")
+  ggplot(aes(cut, prop)) + geom_bar(stat = "identity") # or geom_col()
 
 ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..count../sum(..count..)))
 
 # By specifying group = 1, you treat all cut groups as 1 group.
 ggplot(diamonds, aes(cut)) + geom_bar(aes(y = ..prop.., group = 1))
+# and thus all the proportions are done calculate as a single group
 ```
 
 ## 3.8.1 Exercises
@@ -364,11 +365,6 @@ ggplot(data = mpg, mapping = aes(x = class, y = displ)) +
   geom_boxplot(aes(colour = drv))
 ```
 
----
-title: "R-4DS"
-output: html_document
----
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -388,10 +384,14 @@ ggplot(mpg, aes(factor(1), fill = factor(cyl))) +
 What does labs() do? Read the documentation.
 `labs()` allows you to control all the labels in the plot. For example:
 ```{r}
-p + labs(title = "Hey, this is a title",
+ggplot(mpg, aes(cyl, fill = as.factor(cyl))) +
+    geom_bar() +
+    labs(title = "Hey, this is a title",
+         subtitle = "This are the subs",
          x = "This is the X axis",
          y = "This is the Y axis",
-         fill = "This is the fill")
+         fill = "This is the fill",
+         caption = "This is a caption")
 ```
 
 What’s the difference between coord_quickmap() and coord_map()?
