@@ -1,6 +1,8 @@
 ---
 title: "Ch3"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -89,8 +91,7 @@ How could you use arrange() to sort all missing values to the start? (Hint: use 
 ```{r}
 df <- tibble(x = c(5, 2, NA))
 arrange(df, desc(is.na(x)))
-
-arrange(df, (is.na(x)))
+arrange(df, -(is.na(x)))
 
 ```
 We're basically saying, those which are `TRUE` to being `NA`, sort them in descending order.
@@ -108,11 +109,15 @@ arrange(flights, air_time)
 
 Which flights travelled the longest? Which travelled the shortest?
 ```{r}
-# Longest
-filter(flights, air_time == max(air_time, na.rm = T))
-
 # Shortest
-filter(flights, air_time == min(air_time, na.rm = T))
+flights %>%
+  arrange(air_time) %>%
+  select(carrier, flight, air_time)
+
+# Fastest
+flights %>%
+  arrange(-air_time) %>%
+  select(carrier, flight, air_time)
 ```
 
 ## 5.4.1 Exercises
@@ -168,10 +173,14 @@ select(flights, contains("TIME", ignore.case = F))
 Currently dep_time and sched_dep_time are convenient to look at, but hard to compute with because they’re not really continuous numbers. Convert them to a more convenient representation of number of minutes since midnight.
 
 ```{r}
+hours2mins <- function(x) {
+  x %/% 100 * 60 + x %% 100
+}
+
 # with integer division
 mutate(flights,
-       dep_time = (dep_time %/% 100) * 60 + (dep_time %% 100),
-       sched_dep_time = (sched_dep_time %/% 100) * 60 + (sched_dep_time %% 100))
+       dep_time = hours2mins(dep_time),
+       sched_dep_time = hours2mins(sched_dep_time))
 
 # with rounding operations
 mutate(flights,
@@ -195,12 +204,24 @@ Compare dep_time, sched_dep_time, and dep_delay. How would you expect those thre
 
 ```{r}
 
-flights %>% 
-  mutate(dep_time = (dep_time %/% 100) * 60 + (dep_time %% 100),
-         sched_dep_time = (sched_dep_time %/% 100) * 60 + (sched_dep_time %% 100),
-         arr_time = (arr_time %/% 100) * 60 + (arr_time %% 100),
-         sched_arr_time = (sched_arr_time %/% 100) * 60 + (sched_arr_time %% 100)) %>%
-  transmute(near((sched_dep_time + dep_delay) %% (60*24), dep_time, tol=1))
+hours2mins <- function(x) {
+  x %/% 100 * 60 + x %% 100
+}
+
+
+select(flights, contains("dep")) %>%
+  mutate(dep_time_two = hours2mins(dep_time) - hours2mins(sched_dep_time))
+
+
+# these two numbers don’t match because we aren’t accounting for flights
+# where the departure time is the next day from the scheduled departure time.
+
+select(flights, contains("dep")) %>%
+  mutate(dep_time_two = hours2mins(dep_time) - hours2mins(sched_dep_time)) %>%
+  filter(dep_delay != dep_time_two) %>%
+  mutate(dep_time_two = hours2mins(dep_time) - hours2mins(sched_dep_time - 2400))
+
+# There it is fixed!
 ```
 
 Find the 10 most delayed flights using a ranking function. How do you want to handle ties? Carefully read the documentation for min_rank().
@@ -316,6 +337,11 @@ not_cancelled %>%
 not_cancelled %>%
   group_by(tailnum) %>%
   tally(wt = distance)
+# or
+not_cancelled %>%
+  group_by(tailnum) %>%
+  summarize(n = sum(distance))
+
 ```
 
 Our definition of cancelled flights `(is.na(dep_delay) | is.na(arr_delay) )` is slightly suboptimal. Why? Which is the most important column?
@@ -390,6 +416,18 @@ flights %>%
     mutate(cumulative = !cumany(arr_delay > 60)) %>%
     filter(cumulative == T) %>%
     tally(sort = TRUE)
+```
+
+or
+
+```{r}
+flights %>%
+  group_by(tailnum) %>%
+  arrange(time_hour) %>%
+  mutate(cum = arr_delay > 60,
+         cum_any = cumsum(cum)) %>%
+  filter(cum_any < 1) %>%
+  tally(sort = TRUE)
 ```
 
 What does the sort argument to count() do. When might you use it?
