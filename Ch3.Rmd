@@ -467,9 +467,21 @@ flights %>%
   filter(!is.na(dep_delay)) %>%
   summarise( delay = mean( dep_delay > 0 , na.rm = T)) %>%
   ggplot(aes(hour, delay, fill = delay)) + geom_col() 
+
+# or
+
+flights %>%
+  group_by(hour) %>%
+  summarize(m = mean(dep_delay, na.rm = TRUE),
+            sd = sd(dep_delay, na.rm = TRUE),
+            low_ci = m - 2*sd,
+            high_ci = m + 2*sd,
+            n = n()) %>%
+  ggplot(aes(hour, m, ymin = low_ci, ymax = high_ci)) +
+  geom_pointrange()
 ```
 
-Worst time to flight is in the early evening.
+Worst time to flight is in the early evening. Although that happens because more flights go out on that specific time also.
 
 For each destination, compute the total minutes of delay. For each, flight, compute the proportion of the total delay for its destination.
 
@@ -499,9 +511,22 @@ flights %>%
   select(origin, new_sched_dep_time, dep_delay, prev_time) %>%
   ggplot(aes(dep_delay, prev_time)) + geom_point(alpha = 1/10) +
   geom_smooth()
+
+# or
+
+flights %>%
+  select(year, month, day, hour, dest, dep_delay) %>%
+  group_by(dest) %>%
+  mutate(lag_delay = lag(dep_delay)) %>%
+  arrange(dest) %>%
+  filter(!is.na(lag_delay)) %>%
+  summarize(cor = cor(dep_delay, lag_delay, use = "complete.obs"),
+            n = n()) %>%
+  arrange(desc(cor)) %>%
+  filter(row_number(desc(cor)) %in% 1:10)
 ```
 
-Although there is a lot of noise, you can see a sort of straight line going on there
+Although there is a lot of noise, you can see a sort of straight line going on there. There is also a correlation between the lagged values in many of the destionatinons. So correlation between flights is mostly in specific airports.
 
 Look at each destination. Can you find flights that are suspiciously fast? (i.e. flights that represent a potential data entry error). Compute the air time a flight relative to the shortest flight to that destination. Which flights were most delayed in the air?
 
