@@ -1,14 +1,16 @@
 ---
 title: "Ch5"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r, include = F}
 knitr::opts_chunk$set(echo = TRUE)
-library(tidyverse)
 library(GGally)
 library(nycflights13)
 library(arm)
+library(tidyverse)
 ```
 
 # 7.3.4 Exercises
@@ -110,13 +112,6 @@ What does na.rm = TRUE do in mean() and sum()?
 
 It removes the `NA` from the calculations.
 
----
-title: "Ch7"
-output: html_notebook
----
-
-
-
 7.5.1.1 Exercises
 
 Use what you’ve learned to improve the visualisation of the departure times of cancelled vs. non-cancelled flights.
@@ -135,6 +130,10 @@ fl <-
 fl %>%
   ggplot(aes(sched_dep_time, ..density.., colour = cancelled)) +
   geom_freqpoly(binwidth = 1/2)
+
+fl %>%
+  ggplot(aes(sched_dep_time, colour = cancelled)) +
+  geom_density()
 
 fl %>%
   ggplot(aes(cancelled, sched_dep_time)) +
@@ -196,11 +195,11 @@ library(lvplot)
 p <- ggplot(diamonds, aes(cut, price, colour = ..LV..))
 p + geom_lv()
 
-p <- ggplot(diamonds, aes(cut, price, fill = ..LV..))
+p <- ggplot(diamonds, aes(cut, carat, fill = ..LV..))
 p + geom_lv()
-
-
 ```
+
+This plot ise usefull for having a more detailed description of the tails in a distribution. This works because each particular `lv` plot has both height and width. So for example, we can see that the upper tail for `Fair` has more values that the upper tail for `Ideal`. In a similar line, the distribution of `Ideal` is decreasing both in the number of carats as well as in the number of outliers as it increases towards the upper tail. That information is very difficult to get visually with a boxplot.
 
 Compare and contrast geom_violin() with a facetted geom_histogram(), or a coloured geom_freqpoly(). What are the pros and cons of each method?
 
@@ -212,7 +211,7 @@ diamonds %>%
 diamonds %>%
   ggplot(aes(price)) +
   geom_histogram() +
-  facet_wrap(~ cut, scale = "free_y")
+  facet_wrap(~ cut, scale = "free_y", nrow = 1)
 
 diamonds %>%
   ggplot(aes(price)) +
@@ -235,8 +234,7 @@ diamonds %>%
   group_by(color) %>%
   mutate(perc = n / sum(n)) %>%
   ggplot(aes(color, cut, fill = perc)) +
-  geom_tile() +
-  scale_fill_vi
+  geom_tile()
 ```
 
 Use geom_tile() together with dplyr to explore how average flight delays vary by destination and month of year. What makes the plot difficult to read? How could you improve it?
@@ -251,9 +249,10 @@ flights %>%
   geom_tile()
 
 flights %>%
+  mutate(tot_delay = dep_delay + arr_delay) %>%
+  filter(tot_delay > 0) %>%
   group_by(dest, month) %>%
-  summarize(dep_del_dev = mean(dep_delay, na.rm = T)) %>%
-  group_by(dest) %>%
+  summarize(dep_del_dev = mean(tot_delay, na.rm = T)) %>%
   filter(n() == 12) %>%
   ungroup() %>%
   ggplot(aes(x = factor(month), y = fct_reorder(dest, dep_del_dev), fill = dep_del_dev)) +
