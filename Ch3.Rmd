@@ -89,7 +89,10 @@ The general rule is that whenever there is a logical expressions, if one can be 
 
 How could you use arrange() to sort all missing values to the start? (Hint: use is.na()).
 ```{r}
-df <- tibble(x = c(5, 2, NA))
+df <- tibble(x = c(5, 2, NA),
+             y = c(2, NA, 2))
+
+rowSums(df)
 arrange(df, desc(is.na(x)))
 arrange(df, -(is.na(x)))
 

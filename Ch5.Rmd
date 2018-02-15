@@ -282,6 +282,48 @@ ggplot(data = diamonds,
   geom_freqpoly()
 ```
 
+So cut_number makes N groups having the same number of observation in each group.
+Here there's no contextual or substantive reason for different coding.
+
+cut_width is more substancial. You make groups based on the metric of the variables.
+
+In fact, there's a tension between the two. The idea is that you reach an equilibrium
+between the two; categoris which have substantial meaning but also have reasonable sample sizes.
+
+Here we get 10 groups with the same sample size.
+```{r}
+ggplot(data = diamonds, aes(x=cut_number(price, 10), y=carat)) +
+  geom_boxplot()
+```
+
+The relationship seems a bit exponential with little differences between the smaller groups.
+
+But with 10 groups based on substantive metrics:
+```{r}
+ggplot(data = diamonds, aes(x=cut_width(price, 2000), y=carat)) +
+  geom_boxplot()
+```
+
+There are bigger differences between the bottom group. But that's because the bottom groups now
+contain many more observations which captures the variability between groups (so within each of
+these groups the variance is small, that's why in the previous plot we see very little difference
+in the small groups).
+
+Visualize the distribution of cara, partitioned by price.
+
+```{r}
+d <- select(diamonds, -price)
+
+diamonds %>%
+  mutate(price = cut_width(price, 2000)) %>%
+  ggplot(aes(carat)) +
+  geom_histogram(data = d, alpha = 0.6) +
+  geom_histogram(aes(fill = price)) +
+  facet_wrap(~ price, nrow = 2) +
+  xlim(c(0, 4))
+```
+
+
 Exercise 11.3.5
 
 7. Generate the correct format string to parse each of the following dates and times:
