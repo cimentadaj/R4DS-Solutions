@@ -312,41 +312,52 @@ in the small groups).
 Visualize the distribution of cara, partitioned by price.
 
 ```{r}
-d <- select(diamonds, -price)
+ggplot(diamonds, aes(carat, y = ..density.., colour = cut_width(price, 2000))) +
+  geom_freqpoly()
 
+```
+
+
+How does the price distribution of very large diamonds compare to small diamonds. Is it as you expect, or does it surprise you?
+
+```{r}
 diamonds %>%
-  mutate(price = cut_width(price, 2000)) %>%
-  ggplot(aes(carat)) +
-  geom_histogram(data = d, alpha = 0.6) +
-  geom_histogram(aes(fill = price)) +
-  facet_wrap(~ price, nrow = 2) +
-  xlim(c(0, 4))
+  filter(between(carat, 0, 2.5)) %>%
+  mutate(carat = cut_width(carat, 1)) %>%
+  ggplot(aes(price)) +
+           geom_histogram() +
+           facet_wrap(~ carat)
 ```
 
+I'm a bit surprised with the distribution of price for bigger diamonds. I was expecting very little variance! It seems as though big diamonds can cost anything between 5000 and 18000. Whereas small ones have very little variance.
 
-Exercise 11.3.5
+Combine two of the techniques you've learned to visualize the combined distribution of cut, carat and price.
 
-7. Generate the correct format string to parse each of the following dates and times:
-
-```{r}  
-d1 <- "January 1, 2010"
-parse_date(d1, format = "%B %d, %Y")
-
-d2 <- "2015-Mar-07"
-parse_date(d2, format = "%Y-%b-%d")
-
-d3 <- "06-Jun-2017"
-parse_date(d3, format = "%d-%b-%Y")
-
-d4 <- c("August 19 (2015)", "July 1 (2015)")
-parse_date(d4, format("%B %d (%Y)"))
-
-d5 <- "12/30/14" # Dec 30, 2014
-parse_date(d5, format = "%m/%d/%y")
-
-t1 <- "1705"
-parse_time(t1, format = "%H%M")
-
-t2 <- "11:15:10.12 PM"
-parse_time(t2, format = "%H:%M:%S PM")
+```{r}
+diamonds %>%
+  filter(between(carat, 0, 2.5)) %>%
+  mutate(carat = cut_width(carat, 1)) %>%
+  ggplot(aes(cut, price)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  facet_wrap(~ carat)
 ```
+
+We get the differences in price we saw before for carat groups but we also see that within each carat groups the differences between the cut in terms of prices is very little. It seems the be that the driving force of price is more carat rather than the cut.
+
+Why is a scatterplot a better display than a binned plot for this case?
+
+```{r}
+ggplot(diamonds, aes(x, y)) +
+  geom_point() +
+  coord_cartesian(xlim = c(4, 11), ylim = c(4, 11))
+```
+
+Because binned plots tend to categorize continuous measures and might distort some relationships, like a linear one here.
+
+```{r}
+ggplot(diamonds, aes(x, y)) +
+  geom_hex()
+```
+
+Another possibility would be to bin both continuous variables, as stated before, but that would categorize outliers into groups, eliminating any trace of anomalous or extreme values.
