@@ -1,0 +1,125 @@
+---
+title: "Ch7"
+output:
+  html_document:
+    df_print: paged
+---
+
+## 10.5 Exercises
+
+How can you tell if an object is a tibble? (Hint: try printing mtcars, which is a regular data frame)
+
+Visually you can tell by the printing method and how it stores the class of each variable underneath each variable. Or just get the `class()` of object and see whether it has `tbl_df` and `tbl`.
+
+Compare and contrast the following operations on a data.frame and equivalent tibble. What is different? Why might the default data frame behaviours cause you frustration?
+
+```{r}
+df <- data.frame(abc = 1, xyz = "a")
+df$x # on a tibble this will throw a warning. Partial matching is not allowed
+df[, "xyz"] # on a tibble this will be a data frame still
+df[, c("abc", "xyz")] # This will be the same result in a tibble
+```
+
+The frustration is because in some situations a data frame will returns a different thing like in the last two previous lines of code. Tibble will return the same thing, providing consistency.
+
+If you have the name of a variable stored in an object, e.g. var <- "mpg", how can you extract the reference variable from a tibble?
+
+```{r}
+var <- "mpg"
+as_tibble(mtcars)[[var]]
+
+# or
+
+as_tibble(mtcars)[var]
+```
+
+
+Practice referring to non-syntactic names in the following data frame by:
+
+```{r}
+annoying <- tibble(
+  `1` = 1:10,
+  `2` = `1` * 2 + rnorm(length(`1`)),
+)
+```
+
+Extracting the variable called 1.
+
+```{r}
+annoying$`1`
+```
+
+
+Plotting a scatterplot of 1 vs 2.
+
+```{r}
+ggplot(annoying, aes(`1`, `2`)) +
+  geom_point()
+```
+
+Creating a new column called 3 which is 2 divided by 1.
+
+```{r}
+annoying <-
+  annoying %>%
+  mutate(`3` = `2` / `1`)
+```
+
+
+Renaming the columns to one, two and three.
+
+```{r}
+annoying %>%
+  rename(one = `1`,
+         two = `2`,
+         three = `3`)
+```
+
+What does `tibble::enframe()` do? When might you use it?
+
+It turns named vectors or list to two-column data frames.
+
+It's different from `as_tibble()` for lists because it creates a stacked data frame rather than a widy one. It all dependes on your data.
+```{r}
+lst <- list(female = 1, male = 2)
+
+as_tibble(lst)
+```
+rather than
+
+```{r}
+enframe(lst) %>% unnest()
+```
+
+
+What option controls how many additional column names are printed at the footer of a tibble?
+
+`options(tibble.width = Inf)` for all columns to be printed.
+
+## Exercise 11.3.5
+
+7. Generate the correct format string to parse each of the following dates and times:
+
+```{r}  
+d1 <- "January 1, 2010"
+parse_date(d1, format = "%B %d, %Y")
+
+d2 <- "2015-Mar-07"
+parse_date(d2, format = "%Y-%b-%d")
+
+d3 <- "06-Jun-2017"
+parse_date(d3, format = "%d-%b-%Y")
+
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+parse_date(d4, format("%B %d (%Y)"))
+
+d5 <- "12/30/14" # Dec 30, 2014
+parse_date(d5, format = "%m/%d/%y")
+
+t1 <- "1705"
+parse_time(t1, format = "%H%M")
+
+t2 <- "11:15:10.12 PM"
+parse_time(t2, format = "%H:%M:%S PM")
+```
+

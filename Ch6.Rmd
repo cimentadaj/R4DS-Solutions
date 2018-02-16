@@ -1,0 +1,8 @@
+---
+title: "Ch6"
+output:
+  html_document:
+    df_print: paged
+---
+
+No exercises here
