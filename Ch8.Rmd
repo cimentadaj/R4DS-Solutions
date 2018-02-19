@@ -1,0 +1,126 @@
+---
+title: "Ch7"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+## Exercises 11.3.5
+
+What function would you use to read a file where fiels are separated with "|"?
+
+You use `read_delim` and specify "|" in the `delim` argument.
+
+Apart from `file`, `skip` and `comment`, what other arguments do `read_csv()` and `read_tsv()` have in common?
+
+All arguments! But that's logical because they both use `read_delim` as the function doing the work. Both functions just call `read_delim` with a set of predefine options for the `csv` and `tsv` formats using the `tokenize_*` functions. The `tokenize_*` functions simply return a list with the charachteristics of each format.
+
+What are the most important arguments to `read_fwf()`?
+
+The most important argument is `col_positions` because that's how determine the width at which each column is separated. You can determine the width with the `fwf_*` helper functions.
+
+What arguments do you need to specify to read the following text into a data frame?
+
+```{r}
+read_csv("x,y\n1,'a,b'", quote = "'")
+read_delim("x,y\n1,'a,b'", delim = ",",  quote = "'")
+```
+
+Identify what is wrong with each of the following inline CSV files. What happens when you run the code?
+
+```{r}
+read_csv("a,b\n1,2,3\n4,5,6") # more rows then column names
+read_csv("a,b\n1,2,3\n4,5,6", skip = 1, col_names = letters[1:3]) # fixed
+
+read_csv("a,b,c\n1,2\n1,2,3,4") # second row has only two values but the remaining lines have 3
+
+read_csv("a,b\n\"1") # the second row is actually: ", 1. but it uses \" so it's a literal " and a comma is missing
+read_csv('a,b\n\",1', quote = "'") # it should be something like this I think
+
+read_csv("a,b\n1,2\na,b") # nothing wrong with this one. Maybe the column classes because a and b are column names errors
+read_csv("a,b\n1,2\na,b", n_max = 1) # this is the correct format.
+
+read_csv("a;b\n1;3") # this is ; deliminted
+read_csv2("a;b\n1;3")
+```
+
+
+# Exercise 11.3.5
+
+What are the most important arguments to `locale()`?
+
+This is a bitr tricky because they're all imporant. `encoding` is usually one that brings about a lot of problems if you're working with international data. However, all others are also important except for `asciify` which is hardly used.
+
+What happens if you try and set `decimal_mark` and `grouping_mark` to the same character? What happens to the default value of `grouping_mark` when you set `decimal_mark` to ","? And viceversa?
+
+If you set both to the same character it throws an error. Why? It makes sense. How can you distinguish cents from thousands here? `123,456,789`? Is this 123 million or 123 thousand?
+
+```{r}
+locale(decimal_mark = ".")
+locale(decimal_mark = ",")
+```
+
+`.` and `,` are the defaults. If you change one the other gets assigned.
+
+I didn't discuss the `date_format` and `time_format` options to `locale()`. What do they do? Construct an example that shows when they might be useful?
+
+They set the default date/time formats, which are based on the `ISO8601` format of yyyy-mm-dd hh-mm-ss. You can override that default by specifying the `locale` argument with new defaults.
+
+For date:
+```{r}
+read_csv("a\n05-02-00")
+read_csv("a\n05-02-00", locale = locale(date_format = "%d-%m-%y"))
+```
+
+For time:
+```{r}
+read_csv("a\n02-00-08 am")
+read_csv("a\n02-00-08 am", locale = locale(time_format = "%M-%S-%I %p"))
+```
+
+
+If you live outside the U.S, create a new `locale` object that encapsulates the type of files you read more often.
+
+```{r}
+locale(date_names = "es",
+       date_format = "%Y/%m/%d",
+       time_format = "%H/%M/%S",
+       grouping_mark = ".")
+```
+
+What's the difference between `read_csv()` and `read_csv2()`? They performe exactly the same operation but the first reads comma-delimited files and the second one read semi-colon delimited files.
+
+What are the most common encodings in Europe? and in Asia?
+
+No internet right now!
+
+Generate the correct format string to parse each of the following dates and times:
+
+```{r}  
+d1 <- "January 1, 2010"
+parse_date(d1, format = "%B %d, %Y")
+
+d2 <- "2015-Mar-07"
+parse_date(d2, "%Y-%b-%d")
+
+d3 <- "06-Jun-2017"
+parse_date(d3, "%d-%b-%Y")
+
+d4 <- c("August 19 (2015)", "July 1 (2015)")
+parse_date(d4, "%B %d (%Y)")
+
+d5 <- "12/30/14"
+parse_date(d5, "%m/%d/%y")
+
+t1 <- "1705"
+parse_time(t1, "%H%M")
+
+t2 <- "11:15:10.12 PM"
+parse_time(t2, "%I:%M:%OS %p")
+```
+

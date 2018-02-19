@@ -1,0 +1,66 @@
+---
+title: "Ch9"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+# Exercise 12.2.1
+
+Using prose describe how each of variables and observations are organized in the the tables.
+
+Table 1:
+```{r}
+table1
+```
+
+All columns are it's own variables because for example `year` contains only years and `country` contains only countries. For example, if we got a data set where we have `country` and then two columns for `males` and `females` that would be untidy. At least in principle. Because both columns should be a column called `gender`. This is a bit tricky because nothing says that you can't use the gender columns that way. But for easy use in R it's usually better to work with `tidy` data. But who says that `cases` and `populations` are not the same thing? We could argue that they should be in the same column as it is now.
+
+```{r}
+table2
+```
+
+In principle, this is also not a `tidy` dataset, although that's debatable. If we had something like different sicknesses in the type column then this would be tidy. But `type` in this case should be different columns because they measure different things. This dataset is organized in a way that years are nested within countries and then each type is instead within years.
+
+```{r}
+table3
+```
+This is clearly non-tidy because we can't work with values such as the `rate` column. If this column would be the result of the operation, then this would be a tidy dataset.
+
+```{r}
+table4a
+```
+This is clearly not a tidy dataset because years, which are the same thing, are in different columns. This is the same case as the gender example I outlined above. These two columns should be *one* variable and the values should be a separate column. This dataset is only for the type `cases`
+
+```{r}
+table4b
+```
+
+Same as above, but this is for `population`. 
+
+Compute the `rate` for `table2`, and `table4a` and `table4b`.
+
+```{r}
+fyear <-
+  table2 %>%
+  filter(year == 1999)
+
+fyear %>%
+  filter(type == "cases")
+```
+
+
+Exercise 3
+```{r}
+table2 %>%
+  filter(type == "cases") %>%
+  ggplot(aes(year, count, group = country, colour = country)) +
+    geom_point() +
+    geom_line()
+```
+

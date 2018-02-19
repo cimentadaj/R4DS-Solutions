@@ -39,7 +39,7 @@ Practice referring to non-syntactic names in the following data frame by:
 ```{r}
 annoying <- tibble(
   `1` = 1:10,
-  `2` = `1` * 2 + rnorm(length(`1`)),
+  `2` = `1` * 2 + rnorm(length(`1`))
 )
 ```
 
@@ -95,31 +95,3 @@ enframe(lst) %>% unnest()
 What option controls how many additional column names are printed at the footer of a tibble?
 
 `options(tibble.width = Inf)` for all columns to be printed.
-
-## Exercise 11.3.5
-
-7. Generate the correct format string to parse each of the following dates and times:
-
-```{r}  
-d1 <- "January 1, 2010"
-parse_date(d1, format = "%B %d, %Y")
-
-d2 <- "2015-Mar-07"
-parse_date(d2, format = "%Y-%b-%d")
-
-d3 <- "06-Jun-2017"
-parse_date(d3, format = "%d-%b-%Y")
-
-d4 <- c("August 19 (2015)", "July 1 (2015)")
-parse_date(d4, format("%B %d (%Y)"))
-
-d5 <- "12/30/14" # Dec 30, 2014
-parse_date(d5, format = "%m/%d/%y")
-
-t1 <- "1705"
-parse_time(t1, format = "%H%M")
-
-t2 <- "11:15:10.12 PM"
-parse_time(t2, format = "%H:%M:%S PM")
-```
-
