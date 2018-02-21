@@ -45,17 +45,54 @@ Same as above, but this is for `population`.
 
 Compute the `rate` for `table2`, and `table4a` and `table4b`.
 
+For table 2
 ```{r}
-fyear <-
+fyear_cases <-
   table2 %>%
-  filter(year == 1999)
+  filter(year == 1999,
+         type == "cases")
 
-fyear %>%
-  filter(type == "cases")
+fyear_pop <-
+  table2 %>%
+  filter(year == 1999,
+         type == "population")
+
+rate_99 <-
+  bind_cols(fyear_cases, fyear_pop) %>%
+  mutate(rate = count/count1) %>%
+  select(-ends_with("1"), -type)
+
+
+fyear_cases <-
+  table2 %>%
+  filter(year == 2000,
+         type == "cases")
+
+fyear_pop <-
+  table2 %>%
+  filter(year == 2000,
+         type == "population")
+
+rate_00 <-
+  bind_cols(fyear_cases, fyear_pop) %>%
+  mutate(rate = count/count1) %>%
+  select(-ends_with("1"), -type)
+
+bind_rows(rate_99, rate_00)
 ```
 
+For table 4a and 4b
 
-Exercise 3
+```{r}
+table4a %>%
+  mutate(rate_99 = `1999` / table4b$`1999`,
+         rate_00 = `2000` / table4b$`2000`)
+```
+
+In a way, it's more intuitive to work with `table2` because we use the filtering techniques to understand the operations. But with `table4a` is more succient. However, if we wanted to turn the `table4a/4b` result to a tidier version, it would be more tedious (withut `gather` and such functions.)
+
+Recreate the plot showing change in cases over time using `table2` instead of `table1`. What do you need to do first?
+
 ```{r}
 table2 %>%
   filter(type == "cases") %>%
