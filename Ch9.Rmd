@@ -179,3 +179,63 @@ preg %>%
   spread(pregnant, values)
 ```
 
+## 12.4.3 Exercises
+
+What do the extra and fill arguments do in separate()? Experiment with the various options for the following two toy datasets.
+
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), fill = "warn")
+
+tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
+  separate(x, c("one", "two", "three"))
+```
+
+It's simple. x has vectors with 3 and 4 characters but we specify 3 columns. `fill` has three values: 
+`warn`, `right` and `left`. Here I specify a fourth column to place the extra letter. The first fills the missing values with the extra character using the right most match. `left` does the same thing but without a warning. and left places the extra character empty in the first column
+
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three", "four"))
+
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three", "four"), fill = "right")
+
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three", "four"), fill = "left")
+```
+I've deleted the fourth column to see how this works. `extra` on the other hand, deals with either droping or merging the extra characters. `warn` drops the extra character and emits a warning messge.
+`drop` does the same thing but without a warning and `merge` merges the extra character to it's closest end. No aparent option to `merge` with the first column rather than the last.
+
+```{r}
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), extra = "warn")
+
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), extra = "drop")
+
+tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
+  separate(x, c("one", "two", "three"), extra = "merge")
+```
+
+
+Both unite() and separate() have a remove argument. What does it do? Why would you set it to FALSE?
+
+Because `unite` and `separate` receive columns and create new ones, `remove` allows you to remove the original columns that you unite/separate on. You might want to leave them as they are if you're checking whether the transformation was done correctly.
+
+Compare and contrast separate() and extract(). Why are there three variations of separation (by position, by separator, and with groups), but only one unite?
+
+Because you can separate differently. Examples below:
+
+```{r}
+df_sep <- data.frame(x = c(NA, "a-b", "a-d", "b-c", "d-e"))
+df_extract <- data.frame(x = c(NA, "ap.b", "aa/d", "b.c", "d-ee"))
+
+# This is easy with separate
+df_sep %>% separate(x, c("new", "old"), sep = 1)
+df_sep %>% separate(x, c("new", "old"), sep = "-")
+
+# Here we can define 2 or more groups to separate the more complex string
+df_extract %>% extract(x, c("new", "old"), regex = "(.*)[:punct:](.*)")
+```
+However, I don't understand it completely because I think I could do the same as above with `separate` by just providing a regular expression.
