@@ -101,3 +101,81 @@ table2 %>%
     geom_line()
 ```
 
+## 12.3.3 Exercises
+
+Why are gather() and spread() not perfectly symmetrical?
+
+```{r}
+stocks <- tibble(
+  year   = c(2015, 2015, 2016, 2016),
+  half  = c(   1,    2,     1,    2),
+  return = c(1.88, 0.59, 0.92, 0.17)
+)
+stocks %>% 
+  spread(year, return) %>% 
+  gather("year", "return", `2015`:`2016`)
+```
+Both spread() and gather() have a convert argument. What does it do?
+
+Because the `key` variable is actually the column names, and is thus moved as character column. It would be unwise for gather to treat column names as numerics, logicals, or something else. However, you can find a workaround by specifying `convert = TRUE` which will try to convert the `key` columns to it's correct class.
+
+Why does this code fail?
+
+```{r}
+table4a %>% 
+  gather(1999, 2000, key = "year", value = "cases")
+```
+
+Because `gather` can't find the columns names. You can't name columns w/ numbers in R without quoting them with tick marks.
+
+```{r}
+table4a %>% 
+  gather(`1999`, `2000`, key = "year", value = "cases")
+```
+
+
+Why does spreading this tibble fail? How could you add a new column to fix the problem?
+
+```{r}
+people <- tribble(
+  ~name,             ~key,    ~value,
+  #-----------------|--------|------
+  "Phillip Woods",   "age",       45,
+  "Phillip Woods",   "height",   186,
+  "Phillip Woods",   "age",       50,
+  "Jessica Cordero", "age",       37,
+  "Jessica Cordero", "height",   156
+)
+```
+
+Because Phillip Woods has two values of age. Think about it.. Phillip woods then would have TWO columns of age. That doesn't make sense! We need to add a unique column id specifying the third or first age as a unique person.
+
+```{r}
+people %>%
+  mutate(unique_id = c(1, 2, 2, 3, 3)) %>%
+  select(unique_id, everything()) %>%
+  spread(key, value)
+```
+
+Tidy the simple tibble below. Do you need to spread or gather it? What are the variables?
+
+```{r}
+preg <- tribble(
+  ~pregnant, ~male, ~female,
+  "yes",     NA,    10,
+  "no",      20,    12
+)
+```
+
+The main objective of analysis here is whether pregnant or not (bc males can not be pregnant), so I would go for `gather`ing the gender column rather than spreading the pregnant column.
+
+```{r}
+preg %>%
+  gather(gender, values, -pregnant)
+
+# the other way around:
+preg %>%
+  gather(gender, values, -pregnant) %>%
+  spread(pregnant, values)
+```
+
