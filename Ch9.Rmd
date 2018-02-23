@@ -239,3 +239,106 @@ df_sep %>% separate(x, c("new", "old"), sep = "-")
 df_extract %>% extract(x, c("new", "old"), regex = "(.*)[:punct:](.*)")
 ```
 However, I don't understand it completely because I think I could do the same as above with `separate` by just providing a regular expression.
+
+
+## Exercise 12.5.1
+Compare and contrast the fill arguments to spread() and complete().
+
+The `fill` argument in `spread()` will replace ALL missing values regardless of columns with the same value. The `fill` argument of `complete()` accepts a list where each slot is the missing value for each column. So missing values per column are customizable to any chosen missing.
+
+What does the direction argument to fill() do?
+
+If we have this dataset
+
+```{r}
+treatment <- tribble(
+  ~ person,           ~ treatment, ~response,
+  "Derrick Whitmore", 1,           7,
+  NA,                 2,           10,
+  NA,                 3,           9,
+  "Katherine Burke",  1,           4
+)
+```
+
+We have two missing values in column `person`. We can carry over the value `Katherine` to replace the missing values or we could take `Derrick` to replace the missing values. `.direction` does exactly that by specifying either `down` or `up`.
+
+Ex 1.
+```{r}
+fill(treatment, person, .direction = "up")
+```
+
+Ex 2.
+```{r}
+fill(treatment, person, .direction = "down")
+```
+
+## Exercises 12.6.1
+
+In this case study I set na.rm = TRUE just to make it easier to check that we had the correct values. Is this reasonable? Think about how missing values are represented in this dataset. Are there implicit missing values? What’s the difference between an NA and zero?
+
+A proper analysis would not exclude the missing values because that's information! It is the presence of an absence. So for our purposes it is reasonable, but for appropriate descriptive statistics it is important to report the number of missing values.
+
+How many implicit missing values are there? That's easy! We use `complete` with the `gather`ed dataset.
+
+```{r}
+first <-
+  who %>%
+  gather(
+    new_sp_m014:newrel_f65,
+    key = "key",
+    value = "cases"
+  )
+
+second <-
+  first %>% complete(country, year, key)
+
+# We merge both dataset where there are no matching values (so left over rows)
+first %>%
+  anti_join(second, by = c("country", "year", "key"))
+# Nothing!
+
+```
+
+So no implicit missing values. And the difference between an `NA` and a `0` is that 0 means there's 0 cases in that cell but `NA` could mean that there's `20` cases but weren't reported.
+
+What happens if you neglect the mutate() step? (`mutate(key = stringr::str_replace(key, "newrel", "new_rel"))`)
+
+Well, if we have `new_sp` and `newrel` and we separate on `_` we would get a column where there's `new` and `newrel` together and in the other column there would only be `sp`. If we replace `newrel` with `new_rel` then the same pattern is constant in the same column.
+
+I claimed that iso2 and iso3 were redundant with country. Confirm this claim.
+
+```{r}
+who %>%
+  count(country, iso2, iso3) %>%
+  count(country) %>%
+  filter(nn > 1)
+```
+If there would be repetitions of country, then this would equal more than 1
+
+For each country, year, and sex compute the total number of cases of TB. Make an informative visualisation of the data.
+
+```{r}
+who1 <- 
+  who %>%
+  gather(
+    new_sp_m014:newrel_f65,
+    key = "key",
+    value = "cases",
+    na.rm = TRUE
+  ) %>%
+  mutate(key = stringr::str_replace(key, "newrel", "new_rel")) %>%
+  separate(key, c("new", "type", "sexage"), sep = "_") %>%
+  select(-new, -iso2, -iso3) %>%
+  separate(sexage, c("sex", "age"), sep = 1)
+```
+
+```{r}
+who1 %>%
+  group_by(country, year, sex) %>%
+  summarize(n = sum(cases)) %>%
+  ggplot(aes(year, n, group = country)) +
+  geom_line(alpha = 2/4) +
+  facet_wrap(~ sex)
+```
+
+
