@@ -205,3 +205,86 @@ flights %>%
 ```
 
 You can see big differences in the east coast where in June the average delay was much higher. Apparently there was a sever weather storm in the east coast. See [here](https://www.washingtonpost.com/news/capital-weather-gang/wp/2013/06/14/june-13-2013-severe-weather-hypestorm-or-the-real-deal/?utm_term=.ec80520fb97c)
+
+## Exercises 13.5.1
+
+What does it mean for a flight to have a missing tailnum? What do the tail numbers that don’t have a matching record in planes have in common? (Hint: one variable explains ~90% of the problems.)
+
+```{r}
+flights %>%
+    anti_join(planes, by = "tailnum") %>%
+    count(carrier, sort = TRUE)
+```
+
+AA and MQ don't seem to report tail numbers.
+
+Filter flights to only show flights with planes that have flown at least 100 flights.
+
+```{r}
+flights %>%
+  semi_join(count(flights, tailnum) %>% filter(n >= 100))
+```
+
+
+Combine fueleconomy::vehicles and fueleconomy::common to find only the records for the most common models.
+
+```{r}
+ten_common <-
+  fueleconomy::common %>%
+  ungroup() %>%
+  arrange(-n) %>%
+  top_n(10, n)
+
+fueleconomy::vehicles %>%
+  semi_join(ten_common)
+```
+
+
+Find the 48 hours (over the course of the whole year) that have the worst delays. Cross-reference it with the weather data. Can you see any patterns?
+
+```{r}
+fn <-
+  flights %>%
+  group_by(month, day) %>%
+  summarize(avg_delay = sum(arr_delay + dep_delay, na.rm = TRUE)) %>%
+  mutate(twoday_delay = avg_delay + lag(avg_delay)) %>%
+  arrange(-twoday_delay)
+
+wea <-
+  weather %>%
+  group_by(month, day) %>%
+  summarize_at(vars(humid, precip, temp), mean, na.rm = TRUE)
+
+fn %>%
+  left_join(wea) %>%
+  arrange(twoday_delay)
+```
+
+Very superficially, it seems as though precipitation was higher in delays flights, and temprature was slightly higher. Although the pattern is just by looking at top/bottom 10. Graphical inspection should yield more interesting patterns.
+
+
+What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
+
+```{r}
+anti_join(flights, airports, by = c("dest" = "faa"))
+# Give me the flights from the destionations that that are not present in the `airports` dataset.
+
+
+anti_join(airports, flights, by = c("faa" = "dest"))
+# Give me the airports that are not present as destinations in the `flights` dataset.
+```
+
+
+You might expect that there’s an implicit relationship between plane and airline, because each plane is flown by a single airline. Confirm or reject this hypothesis using the tools you’ve learned above.
+
+```{r}
+flights %>%
+  group_by(tailnum, carrier) %>%
+  count() %>%
+  filter(n() > 1) %>%
+  select(tailnum) %>%
+  distinct(tailnum)
+  
+
+```
+
