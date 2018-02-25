@@ -87,3 +87,121 @@ Draw a diagram illustrating the connections between the Batting, Master, and Sal
 How would you characterise the relationship between the Batting, Pitching, and Fielding tables?
 
 It's actualy *very* straight forward: all three tables have the same `playerID` and `yearID` and each table has the information that the other doesn't have, so they complement each other. I think it is one-to-one relationships but that needs to have inspected further.
+
+## Exercises 13.4.6
+
+Compute the average delay by destination, then join on the airports data frame so you can show the spatial distribution of delays. Here’s an easy way to draw a map of the United States:
+
+
+```{r}
+flights %>%
+  mutate(tot_delay = arr_delay + dep_delay) %>%
+  group_by(dest) %>%
+  summarize(avg_delay = mean(tot_delay, na.rm = TRUE)) %>%
+  left_join(select(airports, faa, lon, lat), c("dest" = "faa")) %>%
+  ggplot(aes(lon, lat, colour = avg_delay)) +
+  borders("state") +
+  geom_point(size = 2, alpha = 0.8) +
+  xlim(c(-130, -65)) +
+  ylim(c(20, 50)) +
+  coord_quickmap() +
+  viridis::scale_color_viridis()
+```
+
+
+Add the location of the origin and destination (i.e. the lat and lon) to flights.
+
+```{r}
+flights %>%
+  left_join(select(airports, faa, lat, lon), by = c("origin" = "faa")) %>%
+  rename(lat_origin = lat,
+         lon_origin = lon) %>%
+  left_join(select(airports, faa, lat, lon), by = c("dest" = "faa")) %>%
+  rename(lat_dest = lat,
+         lon_dest = lon) %>%
+  select(origin, dest, matches("lat|lon"))
+```
+
+(However, this could've been done with `gather` and avoid the double `left_join`)
+
+Is there a relationship between the age of a plane and its delays?
+
+```{r}
+flights %>%
+  mutate(tot_delay = arr_delay + dep_delay) %>%
+  group_by(tailnum) %>%
+  summarize(avg_delay = mean(tot_delay, na.rm = TRUE)) %>%
+  left_join(select(planes, tailnum, year), by = "tailnum") %>%
+  mutate(year = 2013 - year) %>%
+  ggplot(aes(avg_delay, year)) +
+  geom_point() +
+  geom_smooth()
+```
+
+From a very preliminary view, there doesn't seem to be, although the some more older planes have very short delays and some younger planes have very high delays. This pattern however could be due to other things such as the origin/destionation.
+
+What weather conditions make it more likely to see a delay?
+
+```{r}
+avg_del <-
+  flights %>%
+  mutate(tot_delay = arr_delay + dep_delay) %>%
+  group_by(month, day) %>%
+  summarize(avg_delay = mean(tot_delay, na.rm = TRUE))
+
+avg_weather <-
+  weather %>%
+  group_by(month, day) %>%
+  select(-hour) %>%
+  summarize_at(vars(temp, humid, wind_speed, precip), mean, na.rm = TRUE)
+
+avg_del %>%
+  left_join(avg_weather) %>%
+  ungroup() %>%
+  mutate(avg_delay = cut_width(avg_delay, 35)) %>%
+  gather(weather, metrics, -(month:avg_delay)) %>%
+  ggplot(aes(avg_delay, metrics)) +
+  geom_boxplot() +
+  facet_wrap(~ weather, scales = "free_y")
+```
+
+Humidity seems to be the one more related to delays, although this is in isolation. A more thorough approach would be to create a grid of all possible combinations of weather conditions and match them up with the delay and then compare the combination of weather conditions with the highest delays.
+
+What happened on June 13 2013? Display the spatial pattern of delays, and then use Google to cross-reference with the weather.
+
+Here is for Junte 13 2013:
+```{r}
+flights %>%
+  mutate(tot_delay = arr_delay + dep_delay) %>%
+  group_by(month, day, dest) %>%
+  summarize(avg_delay = mean(tot_delay, na.rm = TRUE)) %>%
+  filter(month == 6, day == 13) %>%
+  left_join(select(airports, faa, lat, lon), by = c("dest" = "faa")) %>%
+  ggplot(aes(lon, lat, colour = avg_delay)) +
+  borders("state") +
+  geom_point(size = 2, alpha = 0.8) +
+  xlim(c(-130, -65)) +
+  ylim(c(20, 50)) +
+  coord_quickmap() +
+  viridis::scale_color_viridis()
+```
+
+I didn't know if that was a big increase in delays so I cross-checked randomly with the next month:
+
+```{r}
+flights %>%
+  mutate(tot_delay = arr_delay + dep_delay) %>%
+  group_by(month, day, dest) %>%
+  summarize(avg_delay = mean(tot_delay, na.rm = TRUE)) %>%
+  filter(month == 7, day == 13) %>%
+  left_join(select(airports, faa, lat, lon), by = c("dest" = "faa")) %>%
+  ggplot(aes(lon, lat, colour = avg_delay)) +
+  borders("state") +
+  geom_point(size = 2, alpha = 0.8) +
+  xlim(c(-130, -65)) +
+  ylim(c(20, 50)) +
+  coord_quickmap() +
+  viridis::scale_color_viridis()
+```
+
+You can see big differences in the east coast where in June the average delay was much higher. Apparently there was a sever weather storm in the east coast. See [here](https://www.washingtonpost.com/news/capital-weather-gang/wp/2013/06/14/june-13-2013-severe-weather-hypestorm-or-the-real-deal/?utm_term=.ec80520fb97c)
