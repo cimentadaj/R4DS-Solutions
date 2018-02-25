@@ -1,4 +1,89 @@
 ---
 title: "Ch10"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
+
+```{r}
+library(tidyverse)
+library(nycflights13)
+```
+
+Imagine you wanted to draw (approximately) the route each plane flies from its origin to its destination. What variables would you need? What tables would you need to combine?
+
+You would need to combine `airports` with `flights` because the `airports` dataset the the coordinates of the airport. You could match them by the `faa` variable in `airports` and the `origin` and `dest` from `flights`
+
+```{r}
+flights %>%
+  left_join(airports, by = c("origin" = "faa", "dest" = "faa"))
+```
+
+I forgot to draw the relationship between weather and airports. What is the relationship and how should it appear in the diagram?
+
+Similarly as the above exercise, you can match them with `faa` in `airports` and `origin` in `weather`.
+
+weather only contains information for the origin (NYC) airports. If it contained weather records for all airports in the USA, what additional relation would it define with flights?
+
+You could also connect it with flights through the `dest` and have the weather of every single airport in the U.S that are present in the `flights` dataset.
+
+We know that some days of the year are "special"", and fewer people than usual fly on them. How might you represent that data as a data frame? What would be the primary keys of that table? How would it connect to the existing tables?
+
+You could have a separate dataset with the festivities in the U.S by day and month. With this information you can match it with each flight in the `flights` data set and subsequently with the `weather` dataset
+
+## Exercises 13.3.1
+
+Add a surrogate key to flights.
+
+```{r}
+flights %>%
+  mutate(id = row_number(year)) %>%
+  select(id, everything())
+```
+
+Identify the keys in the following datasets
+
+Lahman::Batting,
+
+```{r}
+as_tibble(Lahman::Batting)
+```
+
+It's `playerID`.
+
+babynames::babynames
+
+```{r}
+as_tibble(babynames::babynames)
+```
+
+I think it might be the combination of `year` and `name`. That identifies each name-year pair for matching with other tables.
+
+nasaweather::atmos
+
+```{r}
+as_tibble(nasaweather::atmos)
+```
+
+Here it's most likely `lat`, `long`, `year` and `month`, which locate a specific place in a month/year.
+
+fueleconomy::vehicles
+
+```{r}
+as_tibble(fueleconomy::vehicles)
+```
+`id` is the simple key.
+
+ggplot2::diamonds
+
+```{r}
+as_tibble(ggplot2::diamonds)
+```
+
+There is not key because there are not other datasets! The concept of key only makes sense when there are other relational datasets.
+
+Draw a diagram illustrating the connections between the Batting, Master, and Salaries tables in the Lahman package. Draw another diagram that shows the relationship between Master, Managers, AwardsManagers.
+
+How would you characterise the relationship between the Batting, Pitching, and Fielding tables?
+
+It's actualy *very* straight forward: all three tables have the same `playerID` and `yearID` and each table has the information that the other doesn't have, so they complement each other. I think it is one-to-one relationships but that needs to have inspected further.
