@@ -1,0 +1,88 @@
+---
+title: "Ch11"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+# stringr now belongs to the tidyverse core
+```
+
+
+## Exercises 14.2.5
+
+In code that doesn’t use stringr, you’ll often see paste() and paste0(). What’s the difference between the two functions? What stringr function are they equivalent to? How do the functions differ in their handling of NA?
+
+`paste` and `paste0` are the same but `paste0` has `sep = ""` by default and `paste` has `sep = " "` by default.
+
+`str_c` is the equivalent `stringr` function.
+
+```{r}
+str_c(c("a", "b"), collapse = ", ")
+```
+
+```{r}
+str_c(c("a", "b"), NA)
+# In `str_c` everything that is pasted with an NA is an NA
+
+paste0(c("a", "b"), NA)
+# But in paste0 NA gets converted to a character string a pasted together. To mimic the same behaviour, replace the NA to a string with:
+str_c(c("a", "b"), str_replace_na(NA))
+```
+
+In your own words, describe the difference between the sep and collapse arguments to str_c().
+
+`sep` is what divides what you paste together within a vector of strings. `collapse` is the divider of a single pasted vector of strings.
+
+Use str_length() and str_sub() to extract the middle character from a string. What will you do if the string has an even number of characters?
+
+```{r}
+uneven <- "one"
+even <- "thre"
+
+str_sub(even, str_length(even) / 2, str_length(even) / 2)
+
+# Automatically rounds up the lower digit
+str_sub(uneven, str_length(uneven) / 2, str_length(uneven) / 2)
+```
+One solution would be to round the the highest digit with `ceiling`.
+
+What does str_wrap() do? When might you want to use it?
+
+```{r}
+str_wrap(
+    "Hey, so this is one paragraph
+    I'm interested in writing but I
+    think it might be too long. I just
+    want to make sure this is in the right format",
+    width = 60, indent = 2, exdent = 1
+) %>% cat()
+```
+
+This might be interesting to output messages while running scripts or in packages.
+What does str_trim() do? What’s the opposite of str_trim()?
+
+Write a function that turns (e.g.) a vector c("a", "b", "c") into the string a, b, and c. Think carefully about what it should do if given a vector of length 0, 1, or 2.
+
+```{r}
+
+str_paster <- function(x, collapse = ", ") {
+  str_c(x, collapse = collapse)
+}
+
+tr <- letters[1:3]
+str_paster(tr)
+
+tr <- letters[1:2]
+str_paster(tr)
+
+tr <- letters[1]
+str_paster(tr)
+
+tr <- letters[0]
+str_paster(tr)
+```
+It always returns a character, even if the vector is empty.
+
