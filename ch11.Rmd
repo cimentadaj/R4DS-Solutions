@@ -86,3 +86,25 @@ str_paster(tr)
 ```
 It always returns a character, even if the vector is empty.
 
+## 14.3.1.1 Exercises
+
+Explain why each of these strings don’t match a \: "\", "\\", "\\\".
+
+"\" won't match anything because "\" needs to be accompanied by two "\\" to escape "\"
+"\" won't match "\\" because because "\" is actualy "\\" and needs double escaping so "\\\\" will match it.
+
+Same for "\\\".
+
+
+How would you match the sequence "'\?
+
+str_view("\"'\\", "\"'\\\\")
+
+What patterns will the regular expression \..\..\.. match? How would you represent it as a string?
+
+It matches a string similar to .a.b.c So every '\.' matches a literal dot and . matches any character except a new line.
+
+```{r}
+str_view(".a.b.c", "\\..\\..\\..")
+```
+
