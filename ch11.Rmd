@@ -142,3 +142,154 @@ str_bring(words, "^.{7,}$")
 ```
 
 Since this list is long, you might want to use the match argument to str_view() to show only the matching or non-matching words.
+
+## Exercises 14.3.3.1
+
+Create regular expressions to find all words that:
+
+Start with a vowel.
+
+```{r}
+str_bring(words, "^[aeiou]")
+```
+
+That only contain consonants. (Hint: thinking about matching “not”-vowels.)
+
+```{r}
+str_bring(words, "^[^aeiou]")
+```
+
+End with ed, but not with eed.
+
+```{r}
+str_bring(words, "[^e]ed$")
+```
+
+End with ing or ise.
+
+```{r}
+str_bring(words, "i(ng|se)$")
+```
+
+Empirically verify the rule "i before e except after c".
+
+```{r}
+str_bring(words, "ie|[^c]ie")
+```
+
+
+Is "q"" always followed by a "u"?
+
+```{r}
+str_bring(words, "q[^u]")
+```
+
+Yes!
+
+Write a regular expression that matches a word if it’s probably written in British English, not American English.
+
+A bit hard. The closest is: "ou|ise^|ae|oe|yse^"
+
+```{r}
+str_bring(words, "ou|ise^|ae|oe|yse^")
+```
+
+But see: https://jrnold.github.io/r4ds-exercise-solutions/strings.html
+
+Create a regular expression that will match telephone numbers as commonly written in your country.
+
+```{r}
+x <- c("34697382009", "18093438932", "18098462020")
+str_bring(x, "^34.{9}$")
+```
+or
+
+```{r}
+x <- c("123-456-7890", "1235-2351")
+str_bring(x, "\\d{3}-\\d{3}-\\d{4}")
+```
+
+## Exercises 14.3.4.1
+
+Describe the equivalents of ?, +, * in {m,n} form.
+
+? is {,1}
++ is {1,}
+* has no equivalent
+
+Describe in words what these regular expressions match: (read carefully to see if I’m using a regular expression or a string that defines a regular expression.)
+
+^.*$ 
+
+Matches any string
+
+"\\{.+\\}"
+
+Matches any string with curly braces.
+
+\d{4}-\d{2}-\d{2}
+
+Matches a set of numbers in this format dddd-dd-dd
+
+"\\\\{4}"
+
+It matches four back slashes.
+
+```{r}
+str_bring("\\\\\\\\", "\\\\{4}")
+```
+
+Create regular expressions to find all words that:
+
+Start with three consonants.
+
+```{r}
+str_bring(words, "^[^aeiou]{3}")
+```
+
+Have three or more vowels in a row.
+
+```{r}
+str_bring(words, "[aeiou]{3,}")
+```
+
+
+Have two or more vowel-consonant pairs in a row.
+
+```{r}
+str_bring(words, "[^aeiou][aeiou]{2,}")
+```
+
+Solve the beginner regexp crosswords at https://regexcrossword.com/challenges/beginner.
+
+
+## Exercises 14.3.5.1
+Describe, in words, what these expressions will match:
+
+(.)\1\1
+
+Any character repeated three times in a row.
+
+```{r}
+str_bring(c("aaa", "aaba"), "(.)\\1\\1")
+```
+
+"(.)(.)\\2\\1"
+
+Any two characters repeated 3 times
+```{r}
+str_bring(c("ababab", "ababac"), "(.)(.)\\2")
+```
+
+
+(..)\1
+"(.).\\1.\\1"
+"(.)(.)(.).*\\3\\2\\1"
+Construct regular expressions to match words that:
+
+Start and end with the same character.
+
+Contain a repeated pair of letters (e.g. “church” contains “ch” repeated twice.)
+
+Contain one letter repeated in at least three places (e.g. “eleven” contains three “e”s.)
+
