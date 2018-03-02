@@ -108,3 +108,37 @@ It matches a string similar to .a.b.c So every '\.' matches a literal dot and . 
 str_view(".a.b.c", "\\..\\..\\..")
 ```
 
+## Exercises 14.3.2.1
+
+How would you match the literal string "$^$"?
+
+Given the corpus of common words in stringr::words, create regular expressions that find all words that:
+
+Start with "y".
+```{r}
+str_bring <- function(string, pattern) {
+  string[str_detect(string, pattern)]
+}
+
+str_bring(words, "^y")
+```
+
+End with "x"
+
+```{r}
+str_bring(words, "x$")
+```
+
+Are exactly three letters long. (Don’t cheat by using str_length()!)
+
+```{r}
+str_bring(words, "^.{3}$")
+```
+
+Have seven letters or more.
+
+```{r}
+str_bring(words, "^.{7,}$")
+```
+
+Since this list is long, you might want to use the match argument to str_view() to show only the matching or non-matching words.
