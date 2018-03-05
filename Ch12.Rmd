@@ -1,202 +1,58 @@
 ---
 title: "Ch12"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
-12.2.1 Exercises
-
-1. Using prose, describe how the variables and observations are organised in each of the sample tables.
-
-table1:
-This is a tidy data set. Country is a column containing all country names, year contains each year in stacked format and the remaining two variables are independent values of different measures.
-
-table2:
-Exactly as the previous table, but the type and count are actually storing two variables into one. Both variables have a different metric and thus should be different variables.
-
-table3:
-Has some tidy principles but as the previous table, it combines two columns in one in the last column.
-
-table4a and table4b:
-
-Both tables are untidy because the year variable should be stacked.
-
-2. Compute the rate for table2, and table4a + table4b. You will need to perform four operations:
-
-Extract the number of TB cases per country per year.
-
 ```{r}
-devtools::install_github("garrettgman/DSR")
-library(DSR)
-
-tidy_tb <-
-  table2 %>%
-  spread(type, count)
-
-cases <-
-  tidy_tb %>%
-  select(-population)
+library(tidyverse)
 ```
 
-Extract the matching population per country per year.
+## Exercise 15.3.1
+Explore the distribution of rincome (reported income). What makes the default bar chart hard to understand? How could you improve the plot?
+
+Well, we should recode the levels so that all non-income categories are at the end and the plot is set to `coord_flip` so that the labels can be read.
 
 ```{r}
-population <-
-  tidy_tb %>%
-  select(-cases)
-```
-Divide cases by population, and multiply by 10000.
+gss_cat %>%
+  ggplot(aes(rincome)) +
+  geom_bar()
 
-Store back in the appropriate place.
-
-```{r}
-tidy_tb <- 
-  tidy_tb %>%
-  mutate(rate = cases$cases/population$population)
-```
-
-Which representation is easiest to work with? Which is hardest? Why?
-
-The first representation. I could've computed everything in one pipeline simply because the data was stacked rather than wide. Doing column operations is extremely easy in wide format, so `spread` is particularly useful for transformations and then turning back.
-
-3. Recreate the plot showing change in cases over time using table2 instead of table1. What do you need to do first?
-
-```{r}
-table2 %>%
-  spread(type, count) %>%
-  mutate(year = as.numeric(year)) %>%
-  ggplot(aes(year, cases)) +
-  geom_line(aes(group = country), colour = "grey50") +
-  geom_point(aes(colour = country))
-```
-
-12.3.3 Exercises
-
-1. Why are gather() and spread() not perfectly symmetrical?
-Carefully consider the following example:
-
-```{r}
-stocks <- tibble(
-  year   = c(2015, 2015, 2016, 2016),
-  half  = c(   1,    2,     1,    2),
-  return = c(1.88, 0.59, 0.92, 0.17)
-)
-
-stocks %>% 
-  spread(year, return) %>% 
-  gather("year", "return", `2015`:`2016`)
-# (Hint: look at the variable types and think about column names.)
-```
-Because in most cases when you `gather` a variable the stacked column will be a categorical variable, thus gather turns it into a a character vector.
-
-2. Both spread() and gather() have a convert argument. What does it do?
-
-To turn a character vector into a logical, interger, numeric, of factor if appropriate.
-
-3. Why does this code fail?
-
-```{r}
-table4a %>% 
-  gather(1999, 2000, key = "year", value = "cases")
-#> Error in combine_vars(vars, ind_list): Position must be between 0 and n
-```
-Because you need to `` the non-synthetic names.
-
-```{r}
-table4a %>% 
-  gather(`1999`, `2000`, key = "year", value = "cases")
-```
-
-4. Why does spreading this tibble fail? How could you add a new column to fix the problem?
-
-```{r}
-people <- tribble(
-  ~name,             ~key,    ~value,
-  #-----------------|--------|------
-  "Phillip Woods",   "age",       45,
-  "Phillip Woods",   "height",   186,
-  "Phillip Woods",   "age",       50,
-  "Jessica Cordero", "age",       37,
-  "Jessica Cordero", "height",   156
-)
-
-people %>%
-  spread(key, value)
-```
-Because Phillip Woods has two ages, so no unique identifier. We could add a new column that uniquely identifies each person.
-
-```{r}
-people %>%
-  mutate(id = c(1, 1, 2, 3, 3)) %>%
-  spread(key, value)
-```
-
-5. Tidy the simple tibble below. Do you need to spread or gather it? What are the variables?
-
-```{r}
-
-preg <- tribble(
-  ~pregnant, ~male, ~female,
-  "yes",     NA,    10,
-  "no",      20,    12
-)
-
-preg %>%
-  gather(gender, freq, -pregnant)
-```
-
-We gather it and turn the gender variable into a stacked column.
-
-2.4.3 Exercises
-
-What do the extra and fill arguments do in separate()? Experiment with the various options for the following two toy datasets.
-
-```{r}
-tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
-  separate(x, c("one", "two", "three"))
-
-# In this case, the second row will have a missing. Should
-# we want the first or second letters to be in the 2nd or 3rd column, for example?
-
-tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
-  separate(x, c("one", "two", "three"))
-
-# By specifying fill we can fix that.
-tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
-  separate(x, c("one", "two", "three"), fill = "left")
-
-# If the tibble would be like the first one:
-tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
-  separate(x, c("one", "two", "three"), extra = "drop")
-
-# Then 'extra' controls what will happen with the additional letter
-
-tibble(x = c("a,b,c", "d,e,f,g", "h,i,j")) %>% 
-  separate(x, c("one", "two", "three"), extra = "merge")
-
-
-```
-
-Both unite() and separate() have a remove argument. What does it do? Why would you set it to FALSE?
-
-`remove` will remove the columns you want to turn into one single column in `unite` and will remove the pasted column to separate in `separate`.
-
-Compare and contrast separate() and extract(). Why are there three variations of separation (by position, by separator, and with groups), but only one unite?
-
-This one I still not find the differences
-
-```{r}
-tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
-  separate(x, c("one", "two", "three"))
-
-tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
-  extract(x, c("one", "two", "three"))
-```
-
-```{r}
-tibble(x = c("a,b,c", "d,e", "f,g,i")) %>% 
-  extract(x, c("one", "two"))
+gss_cat %>%
+  mutate(rincome =
+           fct_relevel(rincome,
+                       c("No answer", "Don't know", "Refused", "Not applicable"))) %>%
+  ggplot(aes(rincome)) +
+  geom_bar() +
+  coord_flip()
 ```
 
 
-# 12.5.1 Exercises
-Missing
+What is the most common relig in this survey? What’s the most common partyid?
+
+```{r}
+gss_cat %>%
+  count(relig) %>%
+  arrange(-n)
+```
+```{r}
+gss_cat %>%
+  count(partyid) %>%
+  arrange(-n)
+```
+
+
+Which relig does denom (denomination) apply to? How can you find out with a table? How can you find out with a visualisation?
+
+```{r}
+gss_cat %>%
+  count(relig, denom) %>%
+  filter(denom == "No denomination")
+```
+```{r}
+
+```
+
+
+
