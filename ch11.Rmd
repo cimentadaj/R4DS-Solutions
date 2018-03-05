@@ -276,20 +276,274 @@ str_bring(c("aaa", "aaba"), "(.)\\1\\1")
 
 "(.)(.)\\2\\1"
 
-Any two characters repeated 3 times
+Two characters followed by the same two characters in reverse order
 ```{r}
-str_bring(c("ababab", "ababac"), "(.)(.)\\2")
+str_bring(c("aabb"), "(.)(.)\\2\\1")
 ```
 
 
 (..)\1
+
+Two charachters repeated twice
+
+```{r}
+str_bring(c("abab", "abba"), "(..)\\1")
+```
+
+
 "(.).\\1.\\1"
+
+A character repeated three times with characters in between each repitition, e.g. abaca
+
+```{r}
+str_bring(c("abaca", "aabb"), "(.).\\1.\\1")
+```
+
+
 "(.)(.)(.).*\\3\\2\\1"
+
+The characters followed by any character repeate 0 or more times and then then the same three characters in reverse order.
+
+```{r}
+str_bring(c("abc312131cba", "aaabbbccc"), "(.)(.)(.).*\\3\\2\\1")
+```
+
 Construct regular expressions to match words that:
 
 Start and end with the same character.
 
+```{r}
+str_bring(words, "^(.).*\\1$")
+```
+
 Contain a repeated pair of letters (e.g. “church” contains “ch” repeated twice.)
+
+```{r}
+str_bring(words, "(..).*\\1")
+```
+
 
 Contain one letter repeated in at least three places (e.g. “eleven” contains three “e”s.)
 
+
+```{r}
+str_bring(words, "([a-z]).*\\1.*\\1")
+```
+
+ 
+## Exercises 14.4.2
+
+For each of the following challenges, try solving it by using both a single regular expression, and a combination of multiple str_detect() calls.
+
+Find all words that start or end with x.
+
+```{r}
+str_bring(words, "^x|x$")
+```
+
+or
+
+```{r}
+start_r <- str_detect(words, "^x")
+end_r <- str_detect(words, "x$")
+
+words[start_r | end_r]
+```
+
+
+Find all words that start with a vowel and end with a consonant.
+
+```{r}
+str_bring(words, "^[aeiou].*[^aeiou]$")
+```
+
+or
+
+```{r}
+start_r <- str_detect(words, "^[aeiou]")
+end_r <- str_detect(words, "[^aeiou]$")
+
+words[start_r & end_r]
+```
+
+
+Are there any words that contain at least one of each different vowel?
+
+```{r}
+
+vowels <-
+  str_detect(words, "a") & str_detect(words, "e") & str_detect(words, "i") &
+  str_detect(words, "o") & str_detect(words, "u")
+
+words[vowels]
+```
+
+
+What word has the highest number of vowels? What word has the highest proportion of vowels? (Hint: what is the denominator?)
+
+```{r}
+vowels <- str_count(words, "[aeiou]")
+
+words[which.max(vowels)]
+```
+
+```{r}
+words[which.max(vowels / str_length(words))]
+```
+
+## Exercises 14.4.3.1
+
+In the previous example, you might have noticed that the regular expression matched "flickered", which is not a colour. Modify the regex to fix the problem.
+
+```{r}
+colors <- c(
+  "red", "orange", "yellow", "green", "blue", "purple"
+)
+
+color_match <- str_c(str_c("\\b", colors, "\\b"), collapse = "|")
+
+sentences[str_count(sentences, color_match) > 1]
+```
+
+
+From the Harvard sentences data, extract:
+
+The first word from each sentence.
+
+```{r}
+str_extract(sentences, "^[a-zA-Z]+")
+```
+
+All words ending in ing.
+
+```{r}
+
+end_ing <- str_extract(sentences, "\\b[a-zA-Z]+ing\\b")
+end_ing[!is.na(end_ing)]
+```
+
+
+All plurals.
+
+```{r}
+unique(unlist(str_extract_all(sentences, "\\b[a-zA-Z]{3,}s\\b"))) %>%
+  head()
+```
+
+## Exercises 14.4.4.1
+
+Find all words that come after a “number” like “one”, “two”, “three” etc. Pull out both the number and the word.
+
+```{r}
+numbers <- c(
+  "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"
+)
+
+number_regexp <- str_c("(", str_c(numbers, collapse = "|"), ")")
+
+regexp <- str_c(number_regexp, " ([^ ]+)")
+all_match <- str_match(sentences, regexp)
+
+all_match[complete.cases(all_match), ] %>% head()
+```
+
+Find all contractions. Separate out the pieces before and after the apostrophe.
+
+```{r}
+contract_re <- "([a-zA-Z]+)'([a-zA-Z]+)"
+contract <- sentences[str_detect(sentences, contract_re)]
+
+str_match(contract, contract_re)
+```
+
+## Exercises 14.4.5.1
+Replace all forward slashes in a string with backslashes.
+
+```{r}
+str_replace_all(c("hey this is a /", "and another / in the pic"),
+                "/", "\\\\")
+```
+
+
+Implement a simple version of str_to_lower() using replace_all().
+
+```{r}
+my_str_lower <- function(x) {
+  lower_let <- letters
+  names(lower_let) <- LETTERS
+  
+  str_replace_all(x, lower_let)
+}
+
+identical(my_str_lower(sentences), str_to_lower(sentences))
+```
+
+
+Switch the first and last letters in words. Which of those strings are still words?
+
+```{r}
+str_replace_all(words, "^([a-z])(.*)([a-z])$", c("\\3\\2\\1"))
+```
+
+## Exercises 14.4.6.1
+Split up a string like "apples, pears, and bananas" into individual components.
+
+```{r}
+str_split("apples, pears, and bananas", boundary("word"))[[1]]
+```
+
+
+Why is it better to split up by boundary("word") than " "?
+
+Becaise ot tales care of commas and dots.
+
+What does splitting with an empty string ("") do? Experiment, and then read the documentation.
+
+```{r}
+str_split("apples, pears, and bananas", "")[[1]]
+```
+
+
+## Exercises 14.5.1
+How would you find all strings containing \ with regex() vs. with fixed()?
+
+```{r}
+str_ing <- c("contains \\", "and \\ another", "ad")
+
+str_subset(str_ing, regex("\\\\"))
+str_subset(str_ing, fixed("\\")) # ignores regular expressions and matches
+# on byte by byte.
+```
+
+
+What are the five most common words in sentences?
+```{r}
+
+unlist(str_split(sentences, boundary("word"))) %>%
+  str_to_lower() %>%
+  tibble() %>%
+  set_names("words") %>%
+  count(words) %>%
+  arrange(desc(n)) %>%
+  head()
+
+```
+
+## Exercises 14.7.1
+Find the stringi functions that:
+
+Count the number of words.
+
+stri_count
+
+Find duplicated strings.
+
+stri_duplicated
+
+Generate random text.
+
+stri_rand_* functions
+
+How do you control the language that stri_sort() uses for sorting?
+
+With the `locale` argument which is specified through `...`
