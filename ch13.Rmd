@@ -1,0 +1,6 @@
+---
+title: "Ch13"
+output:
+  html_document:
+    df_print: paged
+---
