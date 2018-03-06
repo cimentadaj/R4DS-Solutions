@@ -50,9 +50,99 @@ gss_cat %>%
   count(relig, denom) %>%
   filter(denom == "No denomination")
 ```
-```{r}
 
+## Exercises 15.4.1
+There are some suspiciously high numbers in tvhours. Is the mean a good summary?
+
+```{r}
+gss_cat %>%
+  ggplot(aes(tvhours)) +
+  geom_histogram() +
+  geom_vline(xintercept = mean(gss_cat$tvhours, na.rm = TRUE), colour = "red") +
+  geom_vline(xintercept = median(gss_cat$tvhours, na.rm = TRUE), colour = "blue")
 ```
 
+Nope, there's a reasonable differnece between the mean and the median.
 
+For each factor in gss_cat identify whether the order of the levels is arbitrary or principled.
+
+```{r}
+fct_gss <- gss_cat[sapply(gss_cat, is.factor)]
+
+lapply(fct_gss, levels)
+```
+
+For all variables except rincome the levels are arbitrary. `rincome` is the only one which has a principled order.
+
+Why did moving 'Not applicable' to the front of the levels move it to the bottom of the plot?
+
+```{r}
+gss_cat %>%
+  mutate(rincome = rincome %>% fct_relevel("Not applicable")) %>%
+  ggplot(aes(rincome)) +
+  geom_bar()
+```
+
+The previous plot moves it the beginning by if the flip the coordinates, it looks like it's in the end.
+
+```{r}
+gss_cat %>%
+  mutate(rincome = rincome %>% fct_relevel("Not applicable")) %>%
+  ggplot(aes(rincome)) +
+  geom_bar() +
+  coord_flip()
+```
+
+But that's an illusion because of changing the coordinates. The plot is in the same order.
+
+## Exercises 15.5.1
+How have the proportions of people identifying as Democrat, Republican, and Independent changed over time?
+
+```{r}
+
+all_levels <- levels(gss_cat$partyid)
+
+gss_cat %>%
+  mutate(partyid = fct_collapse(partyid,
+    Democract = c('Not str democrat', 'Strong democrat'),
+    Republican = c('Strong republican', 'Not str republican'),
+    Independent = c("Ind,near rep", "Independent", "Ind,near dem"),
+    Others = c("No answer", "Don't know", "Other party")
+  )) %>%
+  count(year, partyid) %>%
+  group_by(year) %>%
+  mutate(perc = n / sum(n)) %>%
+  ggplot(aes(year, perc, group = partyid, colour = partyid)) +
+  geom_line() +
+  theme_bw()
+```
+
+It looks like Independents are growing whereas both other groups are shrinking, with Republicans shrinking much faster.
+
+How could you collapse rincome into a small set of categories?
+
+A very quick but perhaps not so advisable way (because you might lose important information and substantive meaning) is to use `fct_lump`.
+
+```{r}
+gss_cat %>%
+  mutate(rincome = fct_lump(rincome, n = 6)) %>%
+  count(rincome)
+```
+or
+
+```{r}
+gss_cat %>%
+  mutate(rincome =
+           fct_collapse(
+             rincome,
+             `Unknown` = c("No answer", "Don't know", "Refused", "Not applicable"),
+             `Lt $5000` = c("Lt $1000", str_c("$", c("1000", "3000", "4000"),
+                                              " to ", c("2999", "3999", "4999"))),
+             `$5000 to 10000` = str_c("$", c("5000", "6000", "7000", "8000"),
+                                      " to ", c("5999", "6999", "7999", "9999"))
+           )) %>%
+  ggplot(aes(x = rincome)) +
+  geom_bar() +
+  coord_flip()
+```
 
