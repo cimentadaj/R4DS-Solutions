@@ -5,6 +5,12 @@ output:
     df_print: paged
 ---
 
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+
 ## Exercises 16.2.4
 What happens if you parse a string that contains invalid dates?
 
@@ -56,41 +62,23 @@ mdy(d5)
 How does the distribution of flight times within a day change over the course of the year?
 
 ```{r}
-make_datetime_100 <- function(year, month, day, time) {
-  make_datetime(year, month, day, time %/% 100, time %% 100,
-                tz = "Europe/Madrid")
-}
-
-flights_dt <-
-  flights %>%
-  filter(!is.na(dep_time), !is.na(arr_time)) %>%
-  mutate(dep_time = make_datetime_100(year, month, day, dep_time),
-         arr_time = make_datetime_100(year, month, day, arr_time),
-         sched_dep_time = make_datetime_100(
-           year, month, day, sched_dep_time
-         ),
-         sched_arr_time = make_datetime_100(
-           year, month, day, sched_arr_time
-         )) %>%
-  select(origin, dest, ends_with("delay"), ends_with("time"))
-
-
 flights_dt %>%
-  mutate(day = yday(dep_time)) %>%
-  filter(day == 1) %>%
-  ggplot(aes(dep_time)) +
-  geom_freqpoly()
-
+  mutate(time = hour(dep_time) * 100 + minute(dep_time),
+         mon = as.factor(month
+                         (dep_time))) %>%
+  ggplot(aes(x = time, y = ..density.., group = mon, color = mon)) +
+  geom_freqpoly(binwidth = 100)
 ```
 
+Taken from: https://jrnold.github.io/r4ds-exercise-solutions/dates-and-times.html#time-spans
 
 Compare dep_time, sched_dep_time and dep_delay. Are they consistent? Explain your findings.
 
 ```{r}
 flights_dt %>%
   select(dep_time, sched_dep_time, dep_delay) %>%
-  mutate(diff = (dep_time - sched_dep_time) %>% seconds_to_period() %>% minute()) %>%
-  filter(dep_delay != diff) %>%
+  mutate(other_dep_time = (dep_time - sched_dep_time) / 60) %>%
+  filter(dep_delay != other_dep_time) %>%
   View()
 ```
 There seems to be a discrepancy for flights that flew from one day to another.
@@ -98,7 +86,10 @@ There seems to be a discrepancy for flights that flew from one day to another.
 Compare air_time with the duration between the departure and arrival. Explain your findings. (Hint: consider the location of the airport.)
 
 ```{r}
-
+flights_dt %>%
+  mutate(air_time2 = as.numeric(arr_time - dep_time),
+         diff = air_time2 - air_time) %>%
+  select(dep_time, arr_time, air_time, air_time2, diff)
 ```
 
 
@@ -145,5 +136,93 @@ ggplot(flights_dt, aes(minute(sched_dep_time))) +
   geom_histogram(bins = 100)
 ```
 
-
+Taken from: https://jrnold.github.io/r4ds-exercise-solutions/dates-and-times.html#time-spans
 Confirm my hypothesis that the early departures of flights in minutes 20-30 and 50-60 are caused by scheduled flights that leave early. Hint: create a binary variable that tells you whether or not a flight was delayed.
+
+
+Here we calculate the percentage of flights that left early every minute.
+
+```{r}
+flights_dt %>%
+  transmute(early = dep_delay < 0,
+            minute = minute(sched_dep_time)) %>%
+  group_by(minute) %>%
+  summarise(early = mean(early)) %>%
+  ggplot(aes(x = minute, y = early)) +
+  geom_point()
+```
+
+We can check it out by groups of minutes
+
+```{r}
+flights_dt %>%
+  transmute(early = dep_delay < 0,
+            minute = minute(sched_dep_time),
+            group_minute = cut(minute, 6)) %>%
+  group_by(group_minute) %>%
+  summarise(early = mean(early)) %>%
+  ggplot(aes(x = group_minute, y = early)) +
+  geom_point()
+```
+Flights that were suppose to leave in the first ten minutes had greater chances of leaving early than flights which were supposed to leave in the last 20 minutes of the hour.
+
+
+There's a problem with flights that flew over night, let's fix it.
+```{r}
+flights_dt <-
+  flights_dt %>%
+  mutate(
+      overnight = arr_time < dep_time,
+      arr_time = arr_time + days(overnight * 1), # I don't know what * 1 is for
+      sched_arr_time = sched_arr_time + days(overnight * 1)
+  )
+```
+
+
+## Exercises 16.4.5
+Why is there months() but no dmonths()?
+
+Because durations are expressed in seconds and different months have different seconds. For example, February has less days depending on the year. It would be different if you specify the year and month.
+
+Explain days(overnight * 1) to someone who has just started learning R. How does it work?
+
+```{r}
+overnight <- c(TRUE, FALSE, FALSE, TRUE, NA)
+
+days(overnight * 1)
+```
+
+Imagine you have the date 1st of March 2012. You'd like to know the date 100 days in the future. The first date is `dmy(1032012)`. `days(100)` creates a date object of `100` days that you can add to the first date, like `dmy(1032012) + days(100)`.
+
+`overnight` is a vector or logicals, so it will create either 1 day objects or 0 days objects (nothing). I don't know what the 1 is for.
+
+Create a vector of dates giving the first day of every month in 2015. Create a vector of dates giving the first day of every month in the current year.
+
+```{r}
+ymd(20150101) + months(1:12)
+```
+for the second
+
+```{r}
+floor_date(today(), unit = "year") + months(1:12)
+```
+
+Write a function that given your birthday (as a date), returns how old you are in years.
+
+```{r}
+my_bd <- function(birthday) {
+  as.numeric(as.duration(today() - birthday), "years") %/% 1
+}
+
+birthday <- ymd(19910301)
+my_bd(birthday)
+```
+
+
+Why can’t (today() %--% (today() + years(1)) / months(1) work?
+
+```{r}
+today() %--% (today() + years(1)) / months(1)
+```
+It works :/
+
