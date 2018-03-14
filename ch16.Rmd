@@ -1,0 +1,53 @@
+---
+title: "Ch15"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(purrr)
+```
+
+## Exercises 20.3.5
+Describe the difference between is.finite(x) and !is.infinite(x).
+
+There is no difference! `is.finite()` tests whether a value is **not** `-Inf` or `Inf` and `is.infinite` tests whether it is `-Inf` or `Inf`. Logically, `!` negates the previous.
+
+However... `is.infinite` `NA` and `NaN` to be non infinite! See the answer to ex 19.3.1 [here](https://jrnold.github.io/r4ds-exercise-solutions/vectors.html).
+
+Read the source code for dplyr::near() (Hint: to see the source code, drop the ()). How does it work?
+
+It calculates absolute difference up to a certain tolerance level. If the difference is 0.2 it calculates the difference and compares it to the tolerance level.
+
+A logical vector can take 3 possible values. How many possible values can an integer vector take? How many possible values can a double take? Use google to do some research.
+
+Taken from: https://jrnold.github.io/r4ds-exercise-solutions/vectors.html
+
+The help for .Machine describes some of this:
+
+As all current implementations of R use 32-bit integers and uses IEC 60559 floating-point (double precision) arithmetic,
+
+Brainstorm at least four functions that allow you to convert a double to an integer. How do they differ? Be precise.
+
+```{r}
+x <- seq(-10, 10, by = 0.5)
+as.integer(x) # turns to a literal integer
+floor(x) # rounds down
+`%/%`(x, 1) # it extracts the integer part of x
+
+```
+I can't think of a 4th
+
+What functions from the readr package allow you to turn a string into logical, integer, and double vector?
+
+```{r}
+x <- c("TRUE", "FALSE")
+parse_logical(x)
+x <- c("1", "2")
+parse_integer(x)
+x <- c("1.1", "1.2")
+parse_double(x)
+```
+

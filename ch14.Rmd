@@ -1,0 +1,8 @@
+---
+title: "Ch14"
+output:
+  html_document:
+    df_print: paged
+---
+
+No exercises
