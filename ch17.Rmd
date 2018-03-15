@@ -1,0 +1,26 @@
+---
+title: "Ch17"
+output:
+  html_document:
+    df_print: paged
+---
+```{r}
+library(tidyverse)
+```
+
+
+
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+
+output <- vector("double", 0)
+
+for (i in seq_along(df)) {
+  output[[i]] <- mean(df[[i]])
+}
+```
