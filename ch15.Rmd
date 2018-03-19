@@ -1,6 +1,7 @@
 ---
 title: "Ch15"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
 ---
@@ -42,6 +43,7 @@ rescale01(c(Inf, -Inf, 0:5, NA))
 Practice turning the following code snippets into functions. Think about what each function does. What would you call it? How many arguments does it need? Can you rewrite it to be more expressive or less duplicative?
 
 ```{r}
+x <- 1:10
 mean(is.na(x))
 
 x / sum(x, na.rm = TRUE)
@@ -116,7 +118,7 @@ has_prefix <- function(string, prefix) {
   substr(string, 1, nchar(prefix)) == prefix
 }
 
-is_prefix(c("hey_ho", "another_pre"), "hey")
+has_prefix(c("hey_ho", "another_pre"), "hey")
 
 # It removes the last element of x, only of the length greater than 1
 # otherwise returns NULL
@@ -127,7 +129,7 @@ remove_last <- function(x) {
 
 remove_last(c(1, 2, 3))
 
-extend_length <- function(x, y) {
+convert_length <- function(x, y) {
   rep(y, length.out = length(x))
 }
 
@@ -199,6 +201,8 @@ sapply(1:20, fizzbuzz)
 How could you use cut() to simplify this set of nested if-else statements?
 
 ```{r}
+temp <- c(27, 30)
+
 if (temp <= 0) {
   "freezing"
 } else if (temp <= 10) {
@@ -211,7 +215,6 @@ if (temp <= 0) {
   "hot"
 }
 
-temp <- c(27, 30)
 cut(temp, breaks = seq(-10, 40, 10),
     labels = c("freezing", "cold", "cool", "warm", "hot"))
 ```
@@ -229,7 +232,7 @@ cut(temp, breaks = seq(-10, 40, 10),
 
 What happens if you use switch() with numeric values?
 
-```{r}
+```{r, eval = FALSE}
 x = 2
 switch(x, 1 = "No", 2 = "Yes")
 switch(x, `1` = "No", `2` = "Yes")
