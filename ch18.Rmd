@@ -1,0 +1,165 @@
+---
+title: "Ch18"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+library(modelr)
+
+options(na.action = na.warn)
+```
+## Exercises 23.2.1
+
+One downside of the linear model is that it is sensitive to unusual values because the distance incorporates a squared term. Fit a linear model to the simulated data below, and visualise the results. Rerun a few times to generate different simulated datasets. What do you notice about the model?
+
+```{r}
+
+set.seed(2131)
+create_random <- function() {
+  tibble(
+    x = rep(1:10, each = 3),
+    y = x * 1.5 + 6 + rt(length(x), df = 2)
+  )
+}
+
+setNames(1:6, paste0("dt", 1:4)) %>% 
+  map(~ create_random()) %>%
+  enframe() %>% 
+  unnest() %>% 
+  ggplot(aes(x, y)) +
+  geom_point() +
+  geom_smooth(method = "lm", colour = "black", se = FALSE) +
+  facet_wrap(~ name, scales = "free_y")
+```
+
+The slope changes quite a bit depending on the outliers. A better approach could be to used something like a root median squared error.
+
+One way to make linear models more robust is to use a different distance measure. For example, instead of root-mean-squared distance, you could use mean-absolute distance:
+
+```{r}
+model1 <- function(a, data) {
+  a[1] + data$x * a[2]
+}
+
+measure_distance <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  mean(abs(diff))
+}
+```
+
+Use optim() to fit this model to the simulated data above and compare it to the linear model.
+
+```{r}
+create_random <- function() {
+  tibble(
+    x = rep(1:10, each = 3),
+    y = x * 1.5 + 6 + rt(length(x), df = 2)
+  )
+}
+
+model_data <-
+  setNames(1:4, paste0("dt", 1:4)) %>% 
+  map(~ create_random())
+
+final_data <-
+  model_data %>% 
+  map(~ optim(c(0, 0), measure_distance, data = .x)$par) %>% 
+  enframe() %>%
+  unnest() %>% 
+  mutate(type = rep(c("int", "slope"), nrow(.) / 2)) %>% 
+  spread(type, value) %>% 
+  right_join(model_data %>% enframe() %>% unnest())
+
+final_data %>% 
+  ggplot(aes(x, y)) +
+  geom_point() +
+  geom_abline(aes(intercept = int, slope = slope)) +
+  facet_wrap(~ name, scales = "free_y")
+```
+The slope is much less affected by the outliers as it's straight in most cases.
+
+One challenge with performing numerical optimisation is that it’s only guaranteed to find one local optima. What’s the problem with optimising a three parameter model like this?
+
+```{r}
+model1 <- function(a, data) {
+  a[1] + data$x * a[2] + a[3]
+}
+
+measure_distance <- function(mod, data) {
+  diff <- data$y - model1(mod, data)
+  mean(abs(diff))
+}
+
+optim(c(0, 0), measure_distance, data = model_data$dt1)$par
+```
+That you get one (joint) slope, when ideally we'd want two slopes for each term.
+
+
+## Exercises 23.3.3
+
+Instead of using lm() to fit a straight line, you can use loess() to fit a smooth curve. Repeat the process of model fitting, grid generation, predictions, and visualisation on sim1 using loess() instead of lm(). How does the result compare to geom_smooth()?
+
+```{r}
+mod1 <- loess(y ~ x, data = sim1)
+
+sim1 %>% 
+  add_predictions(mod1) %>% 
+  ggplot(aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = pred), colour = "red")
+
+sim1 %>% 
+  ggplot(aes(x, y)) +
+  geom_point() +
+  geom_smooth()
+
+```
+
+
+Same thing! Cool.. didn't know that.
+
+add_predictions() is paired with gather_predictions() and spread_predictions(). How do these three functions differ?
+
+`gather_predictions` works for `gather`ing several models into a tidy data.
+
+```{r}
+new_data <- tibble(
+  y = rnorm(100),
+  x = y + rnorm(100, mean = 5),
+  z = y * runif(100, max = 100)
+)
+
+mod1 <- lm(y ~ x, data = new_data)
+mod2 <- lm(y ~ z, data = new_data)
+
+final_data <-
+  new_data %>% 
+  gather_predictions(mod1, mod2)
+
+  
+final_data %>% 
+  ggplot(aes(pred, colour = model)) +
+  geom_freqpoly()
+```
+
+`spread_predictions` does the same but adds the predictions as columns rather than as tidy dataset.
+
+```{r}
+new_data %>% 
+  spread_predictions(mod1, mod2)
+```
+
+
+
+What does geom_ref_line() do? What package does it come from? Why is displaying a reference line in plots showing residuals useful and important?
+
+`geom_ref_line` is a nice addition to `ggplot2` although it comes from `modelr`. It's purpose is just adding a reference line in a plot. It's very practical for analyzing residuals because that way you can figure out if many points are above/below a certain point, and whether the models is worse/better at being overly pessimistic or overly positive.
+
+Why might you want to look at a frequency polygon of absolute residuals? What are the pros and cons compared to looking at the raw residuals?
+
+Looking at absolute residuals would work really well to distinguish the magnitude of bad or good predictions. Moreover, it server well to identiy strong outliers. On the other hand, the con side is that you don't know whether that strong prediction is either positive or negative. That's why it's better to look at raw residuals for that different question.
