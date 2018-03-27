@@ -163,3 +163,101 @@ What does geom_ref_line() do? What package does it come from? Why is displaying 
 Why might you want to look at a frequency polygon of absolute residuals? What are the pros and cons compared to looking at the raw residuals?
 
 Looking at absolute residuals would work really well to distinguish the magnitude of bad or good predictions. Moreover, it server well to identiy strong outliers. On the other hand, the con side is that you don't know whether that strong prediction is either positive or negative. That's why it's better to look at raw residuals for that different question.
+
+## Exercises 23.4.5
+
+What happens if you repeat the analysis of sim2 using a model without an intercept. What
+happens to the model equation? What happens to the predictions?
+
+```{r}
+mod1 <- lm(y ~ x, data = sim2)
+mod2 <- lm(y ~ x + -1, data = sim2)
+
+model_matrix(sim2, y ~ x)
+model_matrix(sim2, y ~ x + -1)
+```
+
+Nothing happens because the reference group was previously the intercept but it is now an extra category. Consequently, predictions predictions and residuals will be the same.
+
+```{r}
+grid <-
+  sim2 %>% 
+  data_grid(x) %>% 
+  add_predictions(mod2)
+
+ggplot(sim2, aes(x)) + 
+  geom_point(aes(y = y)) +
+  geom_point(data = grid, aes(y = pred), colour = "red", size = 4)
+
+```
+
+Use model_matrix() to explore the equations generated for the models I fit to sim3 and sim4. Why is * a good shorthand for interaction?
+
+```{r}
+mod1 <- lm(y ~ x1 + x2, data = sim3)
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
+
+model_matrix(sim3, y ~ x1 + x2)
+model_matrix(sim3, y ~ x1 * x2)
+```
+
+
+```{r}
+model_matrix(sim4, y ~ x1 + x2)
+model_matrix(sim4, y ~ x1 * x2)
+```
+
+The `*` operator in a formula expands it to include both the main effect and the interaction between the two variables.
+
+Using the basic principles, convert the formulas in the following two models into functions. (Hint: start by converting the categorical variable into 0-1 variables.)
+
+```{r}
+mod1 <- lm(y ~ x1 + x2, data = sim3)
+mod2 <- lm(y ~ x1 * x2, data = sim3)
+```
+
+Taken from [here](https://jrnold.github.io/r4ds-exercise-solutions/model-basics.html#formulas-and-model-families) as I didn't understand the question.
+
+```{r}
+model_matrix_mod1 <- function(.data) {
+  mutate(.data,
+         `x2b` = as.numeric(x2 == "b"),
+         `x2c` = as.numeric(x2 == "c"),
+         `x2d` = as.numeric(x2 == "d"),
+         `x1:x2b` = x1 * x2b,
+         `x1:x2c` = x1 * x2c,
+         `x1:x2d` = x1 * x2d) %>%
+    select(x1, x2b, x2c, x2d, `x1:x2b`, `x1:x2c`, `x1:x2d`)
+}
+
+model_matrix_mod2 <- function(.data) {
+  mutate(.data, `x1:x2` = x1 * x2) %>%
+    select(x1, x2, `x1:x2`)
+}
+
+model_matrix_mod1(sim3)
+```
+```{r}
+model_matrix_mod2(sim4)
+```
+
+
+For sim4, which of mod1 and mod2 is better? I think mod2 does a slightly better job at removing patterns, but it’s pretty subtle. Can you come up with a plot to support my claim?
+
+```{r}
+mod1 <- lm(y ~ x1 + x2, data = sim4)
+mod2 <- lm(y ~ x1 * x2, data = sim4)
+
+resid_res <-
+  sim4 %>% 
+  gather_residuals(mod1, mod2)
+
+resid_res %>% 
+    ggplot(aes(x = resid, colour = model)) +
+    geom_freqpoly(binwidth = 0.5)
+```
+
+The distribution shows that the right-most side of the residuals are much smoother for the second model and closer to the central distribution.
