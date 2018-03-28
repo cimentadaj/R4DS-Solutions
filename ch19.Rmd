@@ -16,3 +16,208 @@ options(na.action = na.warn)
 library(lubridate)
 library(nycflights13)
 ```
+
+
+## Exercises 24.2.3
+
+In the plot of lcarat vs. lprice, there are some bright vertical strips. What do they represent?
+
+Those represents the categories of `carat` which is in fact an integer variable. But because we logged the initial variables we also get results different from integers.
+
+If log(price) = a_0 + a_1 * log(carat), what does that say about the relationship between price and carat?
+
+That the price of a diamond is completely dependent on the carat size but only when the relationship is in a multiplicative or linear fashion. A 1% increase in carat is associated with a 1% increase in price.
+
+Extract the diamonds that have very high and very low residuals. Is there anything unusual about these diamonds? Are the particularly bad or good, or do you think these are pricing errors?
+
+```{r}
+diamonds2 <-
+  diamonds %>% 
+  mutate(lprice = log2(price),
+         lcarat = log2(carat))
+
+mod1 <- lm(lprice ~ lcarat + color + clarity + cut, data = diamonds2)
+
+bottom <-
+  diamonds2 %>% 
+  add_residuals(mod1) %>% 
+  arrange(resid) %>% 
+  slice(1:10)
+
+top <-
+  diamonds2 %>% 
+  add_residuals(mod1) %>% 
+  arrange(-resid) %>% 
+  slice(1:10)
+
+bind_rows(bottom, top) %>% 
+  select(price, carat, resid)
+```
+
+Nothing seems off.
+
+Does the final model, mod_diamonds2, do a good job of predicting diamond prices? Would you trust it to tell you how much to spend if you were buying a diamond?
+
+```{r}
+diamonds2 %>% 
+  add_predictions(mod1) %>% 
+  mutate(pred = 2 ^ pred) %>% 
+  select(price, pred) %>% 
+  mutate(se = predict(mod1, se.fit = TRUE)$se.fit,
+         low_ci = pred - se * 2,
+         upper_ci = pred + se * 2,
+         correct = if_else(price >= low_ci & price <= upper_ci, TRUE, FALSE)) %>% 
+  summarize(prop_correct = mean(correct))
+```
+It doesn't look like **very** good model at predicting because 0% of the predictions were close to the actual price. This is based on the 95% interval.
+
+We could do it separately and check the magnitude of the residuals.
+
+```{r}
+diamonds2 %>% 
+  add_residuals(mod1) %>% 
+  mutate(resid = 2 ^ abs(resid)) %>% 
+  ggplot(aes(resid)) +
+  geom_histogram()
+```
+
+Yet despite it doesn't do a good job at making accurate predictions, the model is not terribly bad as most predictions are close to the actual values.
+
+## Exercises 24.3.5
+
+Use your Google sleuthing skills to brainstorm why there were fewer than expected flights on Jan 20, May 26, and Sep 1. (Hint: they all have the same explanation.) How would these days generalise to another year?
+
+* Jan 21 is Martin Luther King Jr. Day
+* May 26 is Trinity Sunday
+* Sep 2 is labot day
+
+All of these dates are holidays in the US, or the day preceding.
+
+How would they generalize to another year? Well, the holidays are there but they might end up in another day of the week. Let's check it out.
+
+```{r}
+holiday <- c("0121", "0526", "0902")
+years <- 2013:2015
+map(years, ~ wday(ymd(paste0(.x, holiday, sep = "")), label = TRUE))
+```
+It looks like they will be different for every year, suggesting that there's fluctuations in the number of flights per day.
+
+What do the three days with high positive residuals represent? How would these days generalise to another year?
+
+```{r}
+daily %>% 
+  top_n(3, resid)
+#> # A tibble: 3 × 5
+#>         date     n  wday resid   term
+#>       <date> <int> <ord> <dbl> <fctr>
+#> 1 2013-11-30   857   Sat 112.4   fall
+#> 2 2013-12-01   987   Sun  95.5   fall
+#> 3 2013-12-28   814   Sat  69.4   fall
+```
+It means that for Saturdays and Sundays the model underpredicts the number of flights (assuming these residuals are not absolute figures). However, these specific week days for another year might be different, so it's better we make sure that this high imprecision is a weekend effect or a date effect. Once we know, we adjust our model for that typo of seasonal effects.
+
+Create a new variable that splits the wday variable into terms, but only for Saturdays, i.e. it should have Thurs, Fri, but Sat-summer, Sat-spring, Sat-fall. How does this model compare with the model with every combination of wday and term?
+
+```{r}
+## All previous code from the book
+daily <-
+  flights %>% 
+  mutate(date = make_date(year, month, day)) %>%
+  group_by(date) %>% 
+  summarize(n = n()) %>% 
+  mutate(wday = wday(date, label = TRUE))
+
+mod <- lm(n ~ wday, data = daily)
+
+daily <- add_residuals(daily, mod)
+
+term <- function(date) {
+  cut(date,
+      breaks = ymd(20130101, 20130605, 20130825, 20140101),
+      labels = c("spring", "summer", "fall")
+      )
+}
+
+daily <-
+  daily %>% 
+  mutate(term = term(date))
+
+###
+
+new_daily <-
+  daily %>% 
+  mutate(wday = as.character(wday),
+         term_sat = ifelse(wday == "Sat", paste0(wday, "-", term), wday))
+
+mod1 <- MASS::rlm(n ~ term_sat, data = new_daily)
+
+new_daily %>% 
+  add_residuals(mod1) %>% 
+  ggplot(aes(date, resid)) +
+  geom_line()
+```
+
+IT's pretty much the same. Both the Jan-March under prediction and the outliers from summer and winter are present. See [here](https://jrnold.github.io/r4ds-exercise-solutions/model-building.html) for a more detailed explanation.
+
+
+Create a new wday variable that combines the day of week, term (for Saturdays), and public holidays. What do the residuals of that model look like?
+
+```{r}
+daily_holidays <-
+  new_daily %>% 
+  mutate(holidays = case_when(date %in% ymd(c(20130101, # new years
+                                              20130121, # mlk
+                                              20130218, # presidents
+                                              20130527, # memorial
+                                              20130704, # independence
+                                              20130902, # labor
+                                              20131028, # columbus
+                                              20131111, # veterans
+                                              20131128, # thanksgiving
+                                              20131225)) ~ "holiday",
+                              TRUE ~ "None")) %>% 
+  unite(new_term, term_sat, holidays)
+
+mod2 <- lm(n ~ new_term, data = daily_holidays)
+
+daily_holidays %>% 
+  add_residuals(mod2) %>% 
+  ggplot(aes(date, resid)) +
+  geom_line()
+```
+No luck! holidays and days of the week don't seem to change much of the unexplained variation.
+
+What happens if you fit a day of week effect that varies by month (i.e. n ~ wday * month)? Why is this not very helpful?
+
+```{r}
+mod2 <- lm(n ~ wday * month(date), data = daily_holidays)
+
+daily_holidays %>% 
+  add_residuals(mod2) %>% 
+  ggplot(aes(date, resid)) +
+  geom_line()
+```
+
+The outliers become much more extreme! This is the case becaue the interaction term leaves less observations in each cell, making the predictions more uncertain. 
+
+
+What would you expect the model n ~ wday + ns(date, 5) to look like? Knowing what you know about the data, why would you expect it to be not particularly effective?
+
+Well, it could model the overall trend in this year but it would not be particularly effective in generalizing to other years if the effect we're missing is not year-specific but something else like seasonal effects that change over the years. Moreover, it would not capture in detail the strong outliers that are very particular for specific days/weeks.
+
+We hypothesised that people leaving on Sundays are more likely to be business travellers who need to be somewhere on Monday. Explore that hypothesis by seeing how it breaks down based on distance and time: if it’s true, you’d expect to see more Sunday evening flights to places that are far away.
+
+It’s a little frustrating that Sunday and Saturday are on separate ends of the plot. Write a small function to set the levels of the factor so that the week starts on Monday.
+
+```{r}
+week_relevel <- function(x) {
+  fct_relevel(x, "Sun", after = 7)
+}
+
+
+daily %>% 
+  mutate(wday = week_relevel(wday)) %>% 
+  ggplot(aes(wday, n)) +
+  geom_boxplot()
+```
+
