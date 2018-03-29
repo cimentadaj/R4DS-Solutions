@@ -1,0 +1,191 @@
+---
+title: "Ch18"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+library(modelr)
+library(gapminder)
+```
+
+
+## Exercises 25.2.5
+A linear trend seems to be slightly too simple for the overall trend. Can you do better with a quadratic polynomial? How can you interpret the coefficients of the quadratic? (Hint you might want to transform year so that it has mean zero.)
+
+```{r}
+library(splines)
+
+by_country<-
+  gapminder %>% 
+  group_by(country, continent) %>% 
+  nest()
+
+country_model <- function(df) {
+  lm(lifeExp ~ ns(year, 2), data = df)
+}
+
+by_country <-
+  by_country %>% 
+  mutate(model = map(data, country_model))
+
+by_country <- 
+  by_country %>% 
+  mutate(resids = map2(data, model, add_residuals))
+
+resids <- unnest(by_country, resids)
+
+resids %>% 
+  ggplot(aes(year, resid)) +
+  geom_line(aes(group = country), alpha = 1/3) +
+  geom_smooth(se = FALSE)
+```
+Even though there are still many spikes, the trend line lines up with zero much more than before! There was an improvement.
+
+```{r}
+glance <-
+  by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance, .drop = TRUE)
+
+glance %>% 
+  ggplot(aes(continent, r.squared)) +
+  geom_jitter()
+```
+And the R2 seemed to increase substantially in Africa. Quite an improvement from just adding a squared term!
+
+Explore other methods for visualising the distribution of R2 per continent. You might want to try the ggbeeswarm package, which provides similar methods for avoiding overlaps as jitter, but uses deterministic methods.
+
+An interesting approach is not to look at how many R squares but the distribution between continents. We could do that with `freq_poly`.
+
+```{r}
+ggplot(glance, aes(r.squared, colour = continent)) +
+  geom_freqpoly(binwidth = 0.1) +
+  theme_bw()
+```
+Well, not only did AFrica improved (only 1 country remaining close to to an R2 of 0) but the overall distribution is in the same line as Europe and Americas. Because the number of countries within each distribution is very different, another approach is to look at the distribution using `geom_density` to harmonize the count scale.
+
+Using `ggbeeswarm`, let's try what the book suggests.
+
+```{r}
+ggplot(glance, aes(continent, r.squared)) +
+  ggbeeswarm::geom_beeswarm()
+```
+Oh, that's neat. So we shouldn't make any patterns of this new arrangement (remember that these are numbers inside one categor!) but it's much cleaner to look at. In the previous `geom_point` graph is not that easier to see the countries in Africa between `0.60` and `0.90`. So they're not at all that close to the `1` as we though in the `freq_poly` graph.
+
+To create the last plot (showing the data for the countries with the worst model fits), we needed two steps: we created a data frame with one row per country and then semi-joined it to the original dataset. It’s possible avoid this join if we use unnest() instead of unnest(.drop = TRUE). How?
+
+```{r}
+by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  unnest(glance) %>% 
+  filter(r.squared < 0.25) %>% 
+  unnest(data, .drop = TRUE) %>% 
+  ggplot(aes(year, lifeExp, colour = country)) +
+  geom_line()
+```
+Yes, this is the worst country we saw from Africa! That the R2 is very close to zero.
+
+## Exercises 25.4.5
+
+List all the functions that you can think of that take a atomic vector and return a list.
+
+- `strsplit`
+- `stringr::` usually return a list!
+
+Brainstorm useful summary functions that, like quantile(), return multiple values.
+
+- `IQR`
+- `quantile`
+- `confint`
+- `range`
+- `fivenum` (didn't know about this one!)
+
+What’s missing in the following data frame? How does quantile() return that missing piece? Why isn’t that helpful here?
+
+```{r}
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarise(q = list(quantile(mpg))) %>% 
+  unnest()
+#> # A tibble: 15 × 2
+#>     cyl     q
+#>   <dbl> <dbl>
+#> 1     4  21.4
+#> 2     4  22.8
+#> 3     4  26.0
+#> 4     4  30.4
+#> 5     4  33.9
+#> 6     6  17.8
+#> # ... with 9 more rows
+```
+`quantile` returns a vector of length `n` containing the percentile at which to cut off the distribution. The name of that percentile is set as the name of the number. For example..
+
+```{r}
+x <- 1:10
+quantile(x)
+```
+
+But in terms of the list, this isn't helpful! A solution is to turn that into a data frame with `tibble::enframe()`.
+
+```{r}
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarise(q = list(enframe(quantile(mpg)))) %>% 
+  unnest()
+```
+
+There it is.
+
+What does this code do? Why might might it be useful?
+
+```{r}
+mtcars %>% 
+  group_by(cyl) %>% 
+  summarise_each(funs(list))
+```
+If you want to iterate over several lists at the same time, for example.
+
+## Exercises 25.5.3
+
+Why might the lengths() function be useful for creating atomic vector columns from list-columns?
+
+It's usefull to check that both list columns have the same number of rows and can be `unnest`ed. For example.
+
+```{r}
+new_df <-
+  by_country %>% 
+  mutate(glance = map(model, broom::glance)) %>% 
+  select(country, data, resids) %>% 
+  add_row(country = "random",
+          data = list(tibble(a = "hey")),
+          resids = list(tibble(b = c("hey", "ho"))))
+
+new_df
+```
+
+I've added a wrong row that should crash the unnesting.
+
+```{r}
+new_df %>% 
+  unnest()
+```
+
+We can fix it by only subsetting the rows which have the same length between both lists.
+
+```{r}
+new_df %>% 
+  mutate(first_len = map_dbl(data, nrow),
+         second_len = map_dbl(resids, nrow)) %>% 
+  filter(first_len == second_len) %>% 
+  unnest()
+```
+
+List the most common types of vector found in a data frame. What makes lists different?
+
+All atomic vector. Lists can hold anything inside! They con host data frames, S3 objects, whatever you're interested in. However, the data frame won't be able to handle it as a traditional column. For that you need to subset whatever you're interested from the object with `map` and the resul needs to be one of the atomic vectors.
+
