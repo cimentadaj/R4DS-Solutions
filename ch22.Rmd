@@ -1,0 +1,330 @@
+---
+title: "Ch22"
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)
+library(modelr)
+```
+
+## Exercises 28.2.1
+Create one plot on the fuel economy data with customised title, subtitle, caption, x, y, and colour labels.
+
+```{r}
+mpg %>% 
+  group_by(year, class) %>% 
+  summarize(max_hwy = max(hwy)) %>% 
+  ungroup() %>% 
+  mutate(year = as.character(year)) %>% 
+  ggplot(aes(year, max_hwy, color = class, group = class)) +
+  geom_point() +
+  geom_line() +
+  labs(
+    x = "Year of manufacture",
+    y = "Maximum highway mileage",
+    color = "Class of car",
+    title = paste("High way mileage rougly increases for",
+                  "every class of car"),
+    subtitle = paste("Subcompact and compact seem to have",
+                     "decreased")
+  ) +
+  theme_bw()
+
+
+ggplot(mpg, aes(year, displ, group = manufacturer, color = manufacturer)) +
+  geom_line()
+```
+
+
+The geom_smooth() is somewhat misleading because the hwy for large engines is skewed upwards due to the inclusion of lightweight sports cars with big engines. Use your modelling tools to fit and display a better model.
+
+An easy way out is to control the `span` to a more linear trend.
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE, span = 1.8) +
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    color = "Car type",
+    title = paste(
+      "Fuel efficiency generally decreases with",
+      "engine size"
+    ),
+    subtitle = paste(
+      "Two seaters (sports cars) are an exception",
+      "because of their light weight"
+    ),
+    caption = "Data from fueleconomy.gov"
+    )
+
+```
+Or just set the trend to be linear.
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(color = class)) +
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg)",
+    color = "Car type",
+    title = paste(
+      "Fuel efficiency generally decreases with",
+      "engine size"
+    ),
+    subtitle = paste(
+      "Two seaters (sports cars) are an exception",
+      "because of their light weight"
+    ),
+    caption = "Data from fueleconomy.gov"
+    )
+```
+or just a better model, literally.
+
+```{r}
+mod1 <- lm(hwy ~ class, data = mpg)
+
+mpg %>% 
+  add_residuals(mod1) %>% 
+  ggplot(aes(displ, resid)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm") +
+  labs(
+    x = "Engine displacement (L)",
+    y = "Highway fuel economy (mpg) adjusted \n for the class of the car",
+    color = "Car type",
+    title = paste(
+      "Fuel efficiency generally decreases with",
+      "engine size"
+    ),
+    subtitle = paste(
+      "Two seaters (sports cars) are an exception",
+      "because of their light weight"
+    ),
+    caption = "Data from fueleconomy.gov"
+    ) +
+  theme_bw()
+
+```
+
+
+Take an exploratory graphic that you’ve created in the last month, and add informative titles to make it easier for others to understand.
+
+--
+
+## Exercises 28.3.1
+Use geom_text() with infinite positions to place text at the four corners of the plot.
+
+```{r}
+label_text <- tibble(
+  displ = c(-Inf, -Inf, Inf, Inf),
+  hwy = c(Inf, -Inf, Inf, -Inf),
+  hjust = c("left", "left", "right", "right"),
+  vjust = c("top", "bottom", "top", "bottom"),
+  text = c("This is top left",
+           "This is bottom left",
+           "This is top right",
+           "This is bottom right")
+)
+
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  geom_text(aes(hjust = hjust, vjust = vjust, label = text), data = label_text)
+```
+
+
+Read the documentation for annotate(). How can you use it to add a text label to a plot without having to create a tibble?
+
+```{r}
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point() +
+  annotate(geom = "text", label = "annotation", x = 6, y = 30)
+```
+
+
+How do labels with geom_text() interact with faceting? How can you add a label to a single facet? How can you put a different label in each facet? (Hint: think about the underlying data.)
+
+```{r}
+best_in_class <-
+  mpg %>% 
+  filter(manufacturer %in% c("audi", "toyota")) %>% 
+  group_by(manufacturer) %>% 
+  filter(row_number(class) == 1)
+
+mpg %>% 
+  filter(manufacturer %in% c("audi", "toyota")) %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_text(aes(label = model), data = best_in_class) +
+  facet_wrap(~ manufacturer)
+```
+What if you wanted it to appear in one facet and not the other? Think about the data. Let's say we wanted to remove `a4` then we would have to either remove that label or remove the row altogether! For example
+
+```{r}
+best_in_class <-
+  mpg %>% 
+  filter(manufacturer %in% c("audi", "toyota")) %>% 
+  group_by(manufacturer) %>% 
+  filter(row_number(class) == 1) %>% 
+  .[2, ]
+
+mpg %>% 
+  filter(manufacturer %in% c("audi", "toyota")) %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_text(aes(label = model), data = best_in_class) +
+  facet_wrap(~ manufacturer)
+
+
+```
+
+See [here](https://jrnold.github.io/r4ds-exercise-solutions/graphics-for-communication.html) for some cooler examples.
+
+What arguments to geom_label() control the appearance of the background box?
+
+`label.padding`, `label.r` and `label.size`.
+
+What are the four arguments to arrow()? How do they work? Create a series of plots that demonstrate the most important options.
+
+
+```{r}
+mpg %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_segment(x = 3, xend = 4, y = 30, yend = 40,
+               arrow = arrow())
+```
+
+you can specify different angles and options. For example
+
+```{r}
+mpg %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_segment(x = 3, xend = 4, y = 30, yend = 40,
+               arrow = arrow(type = "closed"))
+```
+
+```{r}
+mpg %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_segment(x = 3, xend = 4, y = 30, yend = 40,
+               arrow = arrow(angle = 160))
+```
+
+```{r}
+mpg %>% 
+  ggplot(aes(displ, hwy)) +
+  geom_point() +
+  geom_segment(x = 3, xend = 4, y = 30, yend = 40,
+               arrow = arrow(ends = "first"))
+```
+
+## Exercises 28.4.4
+
+Why doesn’t the following code override the default scale?
+
+```{r}
+df <- tibble(
+  x = rnorm(10000),
+  y = rnorm(10000)
+)
+
+ggplot(df, aes(x, y)) +
+  geom_hex() +
+  scale_colour_gradient2(low = "white", high = "red") +
+  coord_fixed()
+```
+
+I think it's because there's not `color` aesthetic. Instead, `geom_hex` uses a `fill` aesthetic.
+
+```{r}
+df %>% 
+  ggplot(aes(x, y)) +
+  geom_hex() +
+  scale_fill_gradient(low = "white", high = "red") +
+  coord_fixed()
+```
+
+
+What is the first argument to every scale? How does it compare to labs()?
+
+All scales control very similar behavior. For example, the name of the aesthetic, the name of th legend, the labels, breaks, minor breaks of the aesthetic and so on. They are all common to all scales! `labs` has similar arguments such as naming the titles of aesthetics such as `color`, `fill` or any oher aesthetic specified. But it also controls high-level properties of the plot such as `title` and `substitle`.
+
+
+Change the display of the presidential terms by:
+
+```{r}
+presidential <-
+  presidential %>% 
+  mutate(id = row_number())
+
+p <-
+  ggplot(presidential, aes(start, id, color = party)) +
+  geom_point() +
+  geom_segment(aes(xend = end, yend = id))
+p
+```
+
+
+Combining the two variants shown above.
+
+```{r}
+p2 <-
+  p +
+  labs(title = "Presidential terms",
+       x = "Years",
+       y = "Presidents",
+       color = "Political party") +
+  scale_color_manual(labels = c("Dem", "Rep"),
+                     values = c(Democratic = "blue",
+                                Republican = "red"))
+p2
+```
+
+
+Improving the display of the y axis.
+Labelling each term with the name of the president.
+
+```{r}
+p3 <-
+  p2 +
+  scale_y_continuous(breaks = presidential$id,
+                     labels = presidential$name)
+
+p3
+```
+
+Adding informative plot labels.
+
+Done above.
+
+Placing breaks every 4 years (this is trickier than it seems!).
+
+```{r}
+p4 <-
+  p3 +
+  scale_x_date(date_breaks = "4 years",
+               date_labels = "%y'")
+
+p4
+```
+
+
+Use override.aes to make the legend on the following plot easier to see.
+
+```{r}
+ggplot(diamonds, aes(carat, price)) +
+  geom_point(aes(colour = cut), alpha = 1/20) +
+  guides(
+    override.aes = list(alpha = 1)
+  )
+```
